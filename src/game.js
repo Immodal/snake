@@ -1,15 +1,47 @@
+
+const Node = (x, y) => {
+  const node = {}
+  node.x = x
+  node.y = y
+
+  /**
+   * Returns true if node is in game boundary given by nx, ny
+   */
+  node.inBounds = (nx, ny) => node.x>=0 && node.x<nx && node.y>=0 && node.y<ny
+
+  /**
+   * Returns true if node's components equal n's components
+   */
+  node.eq = n => node.x == n.x && node.y == n.y
+
+  /**
+   * Returns a new Node with the sum of node and n's components
+   */
+  node.sum = n => Node(node.x + n.x, node.y + n.y)
+
+  return node
+}
+
 const game = {
+  /**
+   * Constants
+   */
+  NORTH: Node(0,-1),
+  SOUTH: Node(0,1),
+  EAST: Node(1,0),
+  WEST: Node(-1,0),
+
   /**
    * Returns a State with mutations based on update
    */
   next: (nx, ny) => (state=null, update=null) => {
     if (state==null) {
-      const snake = [game.Node(0,0), game.Node(0,1)]
+      const snake = [Node(0,0), Node(0,1)]
       return {
         isAlive: true,
         justEaten: false,
         snake: snake,
-        direction: gmc.EAST,
+        direction: game.EAST,
         apple: game.nextApple(nx, ny, snake),
         nx: nx,
         ny: ny
@@ -56,44 +88,8 @@ const game = {
   nextApple: (nx, ny, snake) => {
     let apple = null
     while(apple==null || snake.some(node => node.eq(apple))) {
-      apple = game.Node(utils.randInt(0, nx-1), utils.randInt(0, ny-1))
+      apple = Node(utils.randInt(0, nx-1), utils.randInt(0, ny-1))
     }
     return apple
   },
-
-  /**
-   * Returns a Node at position x,y
-   */
-  Node: (x, y) => {
-    const node = {}
-    node.x = x
-    node.y = y
-
-    /**
-     * Returns true if node is in game boundary given by nx, ny
-     */
-    node.inBounds = (nx, ny) => node.x>=0 && node.x<nx && node.y>=0 && node.y<ny
-
-    /**
-     * Returns true if node's components equal n's components
-     */
-    node.eq = n => node.x == n.x && node.y == n.y
-
-    /**
-     * Returns a new Node with the sum of node and n's components
-     */
-    node.sum = n => game.Node(node.x + n.x, node.y + n.y)
-
-    return node
-  },
-}
-
-/**
- * Game Constants
- */
-const gmc = {
-  NORTH: game.Node(0,-1), 
-  SOUTH: game.Node(0,1), 
-  EAST: game.Node(1,0), 
-  WEST: game.Node(-1,0),
 }

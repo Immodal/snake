@@ -15,7 +15,7 @@ const sketch = ( p ) => {
   const restart = () => {
     next = game.next(nX(), nY())
     state = next()
-    update = {direction: gmc.EAST}
+    update = {direction: game.EAST}
   }
 
   const initCanvas = () => {
@@ -41,13 +41,13 @@ const sketch = ( p ) => {
 
   p.keyPressed = () => {
     if (p.key == "w") {
-      update.direction = gmc.NORTH
+      update.direction = game.NORTH
     } else if (p.key == "s") {
-      update.direction = gmc.SOUTH
+      update.direction = game.SOUTH
     } else if (p.key == "d") {
-      update.direction = gmc.EAST
+      update.direction = game.EAST
     } else if (p.key == "a") {
-      update.direction = gmc.WEST
+      update.direction = game.WEST
     }
   }
 }
