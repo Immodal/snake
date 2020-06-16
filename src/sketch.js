@@ -71,7 +71,7 @@ const sketch = ( p ) => {
 
   // Data
   p.frameRate(24)
-  let scale = 5
+  let scale = 15
   const nX = () => 2 * scale
   const nY = () => 2 * scale
   const toX = i => Math.round(i * p.width / nX())
@@ -87,7 +87,7 @@ const sketch = ( p ) => {
   }
 
   // Models
-  let qModel = QLearn(500, 300, 1, 0.01, 0.01, 0.9, 0.9, 1, -1)
+  let qModel = QLearn(100, 50, 1, 0.05, 0.01, 0.9, 0.9, 1, -1)
 
   /**
    * Setup
