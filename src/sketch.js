@@ -46,7 +46,6 @@ const sketch = ( p ) => {
     scoreMedian.html(scores.length>0 ? scores[mid] : 0)
     scoreMin.html(scores.length>0 ? scores[0] : 0)
     scoreMax.html(scores.length>0 ? scores[scores.length-1] : 0)
-    console.log(scores)
   }
 
   const HUMAN = 0
