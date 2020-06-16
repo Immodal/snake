@@ -1,4 +1,7 @@
-
+/**
+ * This is the object used for each snake segment and apple
+ * It contains its integer grid location, as well as some useful methods
+ */
 const Node = (x, y) => {
   const node = {}
   node.x = x
@@ -22,6 +25,9 @@ const Node = (x, y) => {
   return node
 }
 
+/**
+ * This contains all the functions needed to run the game
+ */
 const game = {
   /**
    * Constants
@@ -36,10 +42,10 @@ const game = {
    */
   next: (nx, ny) => (state=null, update=null) => {
     if (state==null) {
-      const snake = [Node(0,0), Node(1,0)]
+      const snake = [Node(1,0), Node(0,0)]
       return {
         isAlive: true,
-        justEaten: false,
+        justEaten: true,
         snake: snake,
         direction: game.EAST,
         apple: game.nextApple(nx, ny, snake),
@@ -47,10 +53,10 @@ const game = {
         ny: ny
       }
     } else {
-      const isValidDir = game.isValidDir(state.snake, update.direction)
-      // Necessary otherwise 1/4 exploration moves could result in death
-      update.direction = isValidDir ? update.direction : state.direction 
-      const head = game.nextHead(state.snake, update.direction)
+      const isValidDir = game.isValidDir(state.snake, update ? update.direction : null)
+      // Necessary otherwise 1/4 exploration moves in qlearning could result in death
+      const direction = isValidDir ? update.direction : state.direction 
+      const head = game.nextHead(state.snake, direction)
       const willEat = game.willEat(head, state.apple)
       const willLive = game.willLive(state.nx, state.ny, head, state.snake)
       const snake = willLive ? game.nextSnake(state.snake, head, willEat) : state.snake
@@ -58,7 +64,7 @@ const game = {
         isAlive: willLive,
         justEaten: willEat,
         snake: snake,
-        direction: update.direction,
+        direction: direction,
         apple: willEat? game.nextApple(state.nx, state.ny, snake) : state.apple,
         nx: nx,
         ny: ny
@@ -69,7 +75,7 @@ const game = {
   /**
    * 
    */
-   isValidDir: (snake, dir) => !game.nextHead(snake, dir).eq(snake[1]),
+   isValidDir: (snake, dir) => dir==null ? false : !game.nextHead(snake, dir).eq(snake[1]),
 
   /**
    * Returns true if head is equal to apple

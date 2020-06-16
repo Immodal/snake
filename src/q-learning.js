@@ -1,6 +1,8 @@
-
+/**
+ * 
+ */
 const QLearn = (nEpisodes, maxSteps, exploreRate, exploreDecay, exploreMin, 
-  learnRate, discountRate, eatReward, deathReward) => {
+  learnRate, discountRate, eatReward, deathReward, cumulativePolicy=true) => {
   
   const ql = {}
   ql.nEpisodes = nEpisodes
@@ -12,6 +14,7 @@ const QLearn = (nEpisodes, maxSteps, exploreRate, exploreDecay, exploreMin,
   ql.discountRate = discountRate
   ql.eatReward = eatReward
   ql.deathReward = deathReward
+  ql.cumulativePolicy = cumulativePolicy
   ql.policy = null
 
   /**
@@ -85,22 +88,25 @@ const QLearn = (nEpisodes, maxSteps, exploreRate, exploreDecay, exploreMin,
   /**
    * Updates the policy resulting from the Q-Learning algorithm based on the given state
    */
-  ql.update = (next, state, reset=false) => {
+  ql.update = (next, state) => {
     let exploreRate = ql.exploreRate
-
     // If no policy is given, start fresh
-    if (ql.policy==null || reset) ql.policy = ql.initPolicy(state.nx, state.ny)
+    if (ql.policy==null || state.justEaten || !ql.cumulativePolicy) ql.policy = ql.initPolicy(state.nx, state.ny)
     // Play the game nEpisodes times from the current start to gather information
     for(let ep=0; ep<ql.nEpisodes; ep++) {
       let s = state;
       // Each episode is limited to a maximum number of steps that can be taken
       for(let step=0; step<maxSteps; step++) {
         const head = s.snake[0]
+        // Get an action to try out
         const a = ql.isExplore(head, exploreRate) ? ql.getRandomAction() : ql.getAction(head)
         const ns = next(s, {direction: a})
+        // Get reward based on outcome of the action
         const r = !ns.isAlive ? ql.deathReward : (ns.justEaten ? ql.eatReward : 0)
+        // Calculate and update the Q for the current head location
         const nQ = ql.calcQ(ql.getQ(a, head), r, ql.maxQ(ns.snake[0]))
         ql.setQ(a, nQ, head)
+        // If the snake is dead or just ate, end the episode early, otherwise advance state
         if(!ns.isAlive || ns.justEaten) break
         else s = ns
       }
@@ -111,6 +117,7 @@ const QLearn = (nEpisodes, maxSteps, exploreRate, exploreDecay, exploreMin,
 
   /**
    * Return an updated q value for the current node
+   * Using the Bellman equation
    */
   ql.calcQ = (q, r, nQ) => q + ql.learnRate * (r + ql.discountRate * nQ - q)
 

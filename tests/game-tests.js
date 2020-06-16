@@ -105,7 +105,7 @@ const gameTests = {
     eq(state.nx, 10)
     eq(state.ny, 9)
     eq(state.isAlive, true)
-    eq(state.justEaten, false)
+    eq(state.justEaten, true)
     eq(true, state.snake.reduce((isLinked, node, i, arr)=> {
       if (i==0) return true
       else if (isLinked) return dirs.some(d => arr[i-1].eq(d.sum(node)))
@@ -113,6 +113,18 @@ const gameTests = {
     }))
     eq(true, dirs.some(d => d.eq(state.direction)))
     eq(true, compareKeys(Node(0,0), state.apple))
+
+    let state3 = next(state)
+    eq(state3.nx, 10)
+    eq(state3.ny, 9)
+    eq(state3.isAlive, true)
+    eq(state3.justEaten, false)
+    eq(true, state.snake.reduce((isLinked, node, i, arr)=> {
+      if (i==0) return true
+      else if (isLinked) return dirs.some(d => arr[i-1].eq(d.sum(node)))
+      else return isLinked
+    }))
+    eq(true, dirs.some(d => d.eq(state.direction)))
 
     state.snake = [Node(6,5), Node(5,5)]
     state.apple = Node(6,6)

@@ -1,7 +1,7 @@
 const sketch = ( p ) => {
 
   p.frameRate(24)
-  let scale = 5
+  let scale = 15
   const nX = () => 2 * scale
   const nY = () => 2 * scale
   const toX = i => Math.round(i * p.width / nX())
@@ -14,10 +14,9 @@ const sketch = ( p ) => {
     next = game.next(nX(), nY())
     state = next()
     update = {direction: game.EAST}
-    qModel.policy = null
   }
 
-  const PLAY = 0
+  const HUMAN = 0
   const QLEARN = 1
   let mode = QLEARN
   let qModel = QLearn(500, 300, 1, 0.01, 0.01, 0.9, 0.9, 1, -1)
@@ -29,12 +28,18 @@ const sketch = ( p ) => {
     canvas.parent("#cv")
   }
 
+  /**
+   * Setup
+   */
   p.setup = () => {
     initCanvas()
     restart()
 
   }
 
+  /**
+   * Draw
+   */
   p.draw = () => {
     p.background(240)
     state = next(state, update)
@@ -47,30 +52,28 @@ const sketch = ( p ) => {
     }
 
     p5Game.draw(p, toX, toY, state)
-    
-    p.noFill()
-    p.strokeWeight(5)
-    p.rect(0, 0, p.width, p.height)
   }
 
+  /**
+   * Key Pressed
+   */
   p.keyPressed = () => {
-    if (p.key == "w") {
-      update.direction = game.NORTH
-    } else if (p.key == "s") {
-      update.direction = game.SOUTH
-    } else if (p.key == "d") {
-      update.direction = game.EAST
-    } else if (p.key == "a") {
-      update.direction = game.WEST
+    if (mode==HUMAN) {
+      const direction = p5Game.processUserInput(p)
+      update.direction = direction==null ? update.direction : direction
     }
   }
 }
 
+/**
+ * Draw and Misc UI related functions for Game
+ */
 const p5Game = {
   draw: (p, toX, toY, state) => {
     const snake = state.snake
     const apple = state.apple
 
+    p.stroke(0)
     // Draw snake
     p.strokeWeight(2)
     p.fill(0)
@@ -80,11 +83,27 @@ const p5Game = {
     // Draw Apple
     p.fill(255, 0, 0)
     p.rect(toX(apple.x), toY(apple.y), toX(1), toX(1))
-  }
+
+    // Draw Outer Frame
+    p.noFill()
+    p.strokeWeight(5)
+    p.rect(0, 0, p.width, p.height)
+  },
+
+  processUserInput: p => {
+    if (p.key == "w") return game.NORTH
+    else if (p.key == "s") return game.SOUTH
+    else if (p.key == "d") return game.EAST
+    else if (p.key == "a") return game.WEST
+    else return null
+  },
 }
 
+/**
+ * Draw and Misc UI related functions for QLearn
+ */
 const p5QLearn = {
-  draw: (p, toX, toY, model, state) => {
+  draw: (p, toX, toY, model) => {
     // See if the best move (a direction) is equal to dir (a given direction)
     const matchDir = (node, dir) => model.getAction(node).eq(dir)
     const max = () => { // Get the largest value in the qTable
@@ -100,11 +119,11 @@ const p5QLearn = {
     const drawArrow = (node, tipXMove, tipYMove, baseXMove, baseYMove) => {
       let x = node.x + 0.5
       let y = node.y + 0.5
-      p.beginShape();
-      p.vertex(toX(x+baseXMove), toY(y+baseYMove));
-      p.vertex(toX(x+tipXMove), toY(y+tipYMove));
-      p.vertex(toX(x-baseXMove), toY(y-baseYMove));
-      p.endShape(p.CLOSE);
+      p.triangle(
+        toX(x+baseXMove), toY(y+baseYMove), 
+        toX(x+tipXMove), toY(y+tipYMove),
+        toX(x-baseXMove), toY(y-baseYMove)
+      )
     }
 
     const vmax = max()
@@ -113,10 +132,10 @@ const p5QLearn = {
       p.noStroke()
       p.fill(`rgba(0,191,255,${Math.max(0.1, p.map(model.maxQ(node), vmax/6, vmax, 0, 1))})`)
       if (model.allQEq(node)) {} // Do nothing, if all qs are equal, the move is random
-      else if (matchDir(node, game.NORTH)) drawArrow(node, 0, -0.5, 0.25, 0)
-      else if (matchDir(node, game.SOUTH)) drawArrow(node, 0, 0.5, 0.25, 0)
-      else if (matchDir(node, game.EAST)) drawArrow(node, 0.5, 0, 0, 0.25)
-      else drawArrow(node, -0.5, 0, 0, 0.25)
+      else if (matchDir(node, game.NORTH)) drawArrow(node, 0, -0.5, 0.15, 0)
+      else if (matchDir(node, game.SOUTH)) drawArrow(node, 0, 0.5, 0.15, 0)
+      else if (matchDir(node, game.EAST)) drawArrow(node, 0.5, 0, 0, 0.15)
+      else drawArrow(node, -0.5, 0, 0, 0.15)
     }))
   }
 }
