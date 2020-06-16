@@ -61,13 +61,13 @@ const gameTests = {
   },
 
   'nextSnake': () => {
-    const snake1 = [Node(0,0), Node(0,1)]
-    const snake2 = [Node(0,0), Node(0,1), Node(1,1)]
-    const snake3 = [Node(0,1), Node(1,1)]
+    const snake1 = [Node(0,1), Node(0,0)]
+    const snake2 = [Node(1,1), Node(0,1), Node(0,0)]
+    const snake3 = [Node(1,1), Node(0,1)]
 
     eq(true, game.nextSnake(snake1, Node(1,1), true).every((node, i) => node.eq(snake2[i])))
-    eq(false, game.nextSnake(snake1, Node(1,1), true).every((node, i) => node.eq(snake3[i])))
-    eq(false, game.nextSnake(snake1, Node(1,1), false).every((node, i) => node.eq(snake2[i])))
+    eq(false, game.nextSnake(snake1, Node(1,1), true).length == snake3.length)
+    eq(false, game.nextSnake(snake1, Node(1,1), false).length == snake2.length)
     eq(true, game.nextSnake(snake1, Node(1,1), false).every((node, i) => node.eq(snake3[i])))
   },
 
@@ -114,7 +114,7 @@ const gameTests = {
     eq(true, dirs.some(d => d.eq(state.direction)))
     eq(true, compareKeys(Node(0,0), state.apple))
 
-    state.snake = [Node(5,5), Node(6,5)]
+    state.snake = [Node(6,5), Node(5,5)]
     state.apple = Node(6,6)
     let state2 = next(state, {direction: game.SOUTH})
     eq(false, state == state2) // state should always be a new state

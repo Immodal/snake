@@ -42,7 +42,7 @@ const sketch = ( p ) => {
 
     if(mode==QLEARN) {
       qModel.update(next, state, state.justEaten)
-      update.direction = qModel.getAction(state.snake[state.snake.length-1])
+      update.direction = qModel.getAction(state.snake[0])
       p5QLearn.draw(p, toX, toY, qModel, state)
     }
 

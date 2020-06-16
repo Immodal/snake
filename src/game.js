@@ -69,7 +69,7 @@ const game = {
   /**
    * 
    */
-   isValidDir: (snake, dir) => !game.nextHead(snake, dir).eq(snake[snake.length-2]),
+   isValidDir: (snake, dir) => !game.nextHead(snake, dir).eq(snake[1]),
 
   /**
    * Returns true if head is equal to apple
@@ -84,12 +84,12 @@ const game = {
   /**
    * Returns a Node where the snake's head would be if it moved toward dir
    */
-  nextHead: (snake, dir) => snake[snake.length-1].sum(dir),
+  nextHead: (snake, dir) => snake[0].sum(dir),
 
   /**
-   * If grow is true, return snake + head, else return snake[0:-1] + head
+   * If grow is true, return head + snake, else return head + snake[0:-1]
    */
-  nextSnake: (snake, head, grow) => grow ? snake.concat(head) : snake.slice(1).concat(head),
+  nextSnake: (snake, head, grow) => [head].concat(grow ? snake : snake.slice(0,-1)),
 
   /**
    * Returns a randomly positioned node that excludes any part of snake

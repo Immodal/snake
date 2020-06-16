@@ -95,11 +95,11 @@ const QLearn = (nEpisodes, maxSteps, exploreRate, exploreDecay, exploreMin,
       let s = state;
       // Each episode is limited to a maximum number of steps that can be taken
       for(let step=0; step<maxSteps; step++) {
-        const head = s.snake[s.snake.length-1]
+        const head = s.snake[0]
         const a = ql.isExplore(head, exploreRate) ? ql.getRandomAction() : ql.getAction(head)
         const ns = next(s, {direction: a})
         const r = !ns.isAlive ? ql.deathReward : (ns.justEaten ? ql.eatReward : 0)
-        const nQ = ql.calcQ(ql.getQ(a, head), r, ql.maxQ(ns.snake[ns.snake.length-1]))
+        const nQ = ql.calcQ(ql.getQ(a, head), r, ql.maxQ(ns.snake[0]))
         ql.setQ(a, nQ, head)
         if(!ns.isAlive || ns.justEaten) break
         else s = ns
