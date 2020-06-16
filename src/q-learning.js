@@ -76,7 +76,6 @@ const QLearn = (nEpisodes, maxSteps, exploreRate, exploreDecay, exploreMin,
    */
   ql.maxQ = node => {
     let maxQ = null
-    console.log(node)
     ql.getQs(node).forEach(v => {
       if(maxQ==null || v>maxQ) maxQ = v
     })
@@ -107,7 +106,6 @@ const QLearn = (nEpisodes, maxSteps, exploreRate, exploreDecay, exploreMin,
       }
       // Exploration rate decays linearly with each episode until a minimum is reached
       exploreRate = Math.max(ql.exploreMin, exploreRate - ql.exploreDecay)
-      //console.log(`${exploreRate}, ${ql.exploreRate}`)
     }
   }
 

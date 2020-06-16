@@ -47,6 +47,9 @@ const game = {
         ny: ny
       }
     } else {
+      const isValidDir = game.isValidDir(state.snake, update.direction)
+      // Necessary otherwise 1/4 exploration moves could result in death
+      update.direction = isValidDir ? update.direction : state.direction 
       const head = game.nextHead(state.snake, update.direction)
       const willEat = game.willEat(head, state.apple)
       const willLive = game.willLive(state.nx, state.ny, head, state.snake)
@@ -62,6 +65,11 @@ const game = {
       }
     }
   },
+  
+  /**
+   * 
+   */
+   isValidDir: (snake, dir) => !game.nextHead(snake, dir).eq(snake[snake.length-2]),
 
   /**
    * Returns true if head is equal to apple

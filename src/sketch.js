@@ -20,7 +20,7 @@ const sketch = ( p ) => {
   const PLAY = 0
   const QLEARN = 1
   let mode = QLEARN
-  let qModel = QLearn(500, 300, 1, 0.01, 0.01, 0.7, 0.9, 1, -1)
+  let qModel = QLearn(500, 300, 1, 0.01, 0.01, 0.9, 0.9, 1, -1)
 
   // Pre-allocate DOM component vars, cant be inited until setup() is called
   let canvas = null
@@ -43,10 +43,11 @@ const sketch = ( p ) => {
     if(mode==QLEARN) {
       qModel.update(next, state, state.justEaten)
       update.direction = qModel.getAction(state.snake[state.snake.length-1])
+      p5QLearn.draw(p, toX, toY, qModel, state)
     }
 
     p5Game.draw(p, toX, toY, state)
-    p5QLearn.draw(p, toX, toY, qModel, state)
+    
     p.noFill()
     p.strokeWeight(5)
     p.rect(0, 0, p.width, p.height)
@@ -109,6 +110,7 @@ const p5QLearn = {
     const vmax = max()
     model.policy.map((v, i) => v.map((q, j) => {
       node = Node(i,j)
+      p.noStroke()
       p.fill(`rgba(0,191,255,${Math.max(0.1, p.map(model.maxQ(node), vmax/6, vmax, 0, 1))})`)
       if (model.allQEq(node)) {} // Do nothing, if all qs are equal, the move is random
       else if (matchDir(node, game.NORTH)) drawArrow(node, 0, -0.5, 0.25, 0)
