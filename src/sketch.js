@@ -38,7 +38,7 @@ const sketch = ( p ) => {
   }
   const updateScoreStats = score => {
     if (score>=0) scores.push(score)
-    scores.sort()
+    scores.sort((a, b) => a - b)
     const sum = scores.reduce((acc, v) => acc+v, 0)
     const mid = Math.floor(scores.length/2)
     gameCount.html(scores.length)
@@ -46,11 +46,7 @@ const sketch = ( p ) => {
     scoreMedian.html(scores.length>0 ? scores[mid] : 0)
     scoreMin.html(scores.length>0 ? scores[0] : 0)
     scoreMax.html(scores.length>0 ? scores[scores.length-1] : 0)
-  }
-  const resetScoreStats = () => {
-    scores = []
-    updateScore(0)
-    updateScoreStats(-1)
+    console.log(scores)
   }
 
   const HUMAN = 0
@@ -63,14 +59,36 @@ const sketch = ( p ) => {
     playerSelect.option("Human", HUMAN)
     playerSelect.option("Q-Learning", QLEARN)
     playerSelect.value(QLEARN)
-    playerSelect.changed(() => {
-      resetScoreStats()
-      restart()
+    playerSelect.changed(resetGame)
+  }
+
+  let gameSizeLabel = null
+  let gameSizeSlider = null
+  const initGameSizeSlider = () => {
+    gameSizeLabel = p.createSpan("15")
+    gameSizeLabel.parent("#gameSizeLbl")
+    gameSizeSlider = p.createSlider(2, 25, 15, 1)
+    gameSizeSlider.parent('#gameSize')
+    gameSizeSlider.changed(() => {
+      scale = gameSizeSlider.value()
+      gameSizeLabel.html(gameSizeSlider.value())
+      resetGame()
     })
   }
 
-  // Data
-  p.frameRate(24)
+  let gameSpeedLabel = null
+  let gameSpeedSlider = null
+  const initGameSpeedSlider = () => {
+    gameSpeedLabel = p.createSpan("24")
+    gameSpeedLabel.parent("#gameSpeedLbl")
+    gameSpeedSlider = p.createSlider(1, 24, 24, 1)
+    gameSpeedSlider.parent('#gameSpeed')
+    gameSpeedSlider.changed(() => {
+      p.frameRate(gameSpeedSlider.value())
+      gameSpeedLabel.html(gameSpeedSlider.value())
+    })
+  }
+  
   let scale = 15
   const nX = () => 2 * scale
   const nY = () => 2 * scale
@@ -84,6 +102,13 @@ const sketch = ( p ) => {
     next = game.next(nX(), nY())
     state = next()
     update = {direction: game.EAST}
+    qModel.policy = null
+  }
+  const resetGame = () => {
+    scores = []
+    updateScore(0)
+    updateScoreStats(-1)
+    restart()
   }
 
   // Models
@@ -94,10 +119,14 @@ const sketch = ( p ) => {
    */
   p.setup = () => {
     initCanvas()
+    initGameSizeSlider()
+    initGameSpeedSlider()
     initScoreCounter()
     initScoreStats()
     initPlayerSelect()
-    restart()
+
+    p.frameRate(24)
+    resetGame()
 
   }
 
@@ -108,7 +137,7 @@ const sketch = ( p ) => {
     p.background(240)
     state = next(state, update)
     if (state.justEaten) updateScore(calcScore(state))
-    if (!state.isAlive) {
+    if (!state.isAlive || state.apple==null) {
       updateScoreStats(calcScore(state))
       restart()
     }

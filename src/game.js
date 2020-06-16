@@ -99,8 +99,10 @@ const game = {
 
   /**
    * Returns a randomly positioned node that excludes any part of snake
+   * If null, then the snake has filled all possible positions in the game
    */
   nextApple: (nx, ny, snake) => {
+    if (snake.length >= nx*ny) return null
     let apple = null
     while(apple==null || snake.some(node => node.eq(apple))) {
       apple = Node(utils.randInt(0, nx-1), utils.randInt(0, ny-1))
