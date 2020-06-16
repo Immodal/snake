@@ -1,7 +1,77 @@
 const sketch = ( p ) => {
+  // Pre-allocate DOM component vars, cant be inited until setup() is called
+  let canvas = null
+  const initCanvas = () => {
+    canvas = p.createCanvas(500, 500)
+    canvas.parent("#cv")
+  }
 
+  let score = 0
+  let scoreCounter = null
+  const initScoreCounter = () => {
+    scoreCounter = p.createSpan("0")
+    scoreCounter.parent("#scoreCount")
+  }
+  const calcScore = state => state.snake.length-2
+  const updateScore = s => {
+    score = s
+    scoreCounter.html(score)
+  }
+
+  let scores = []
+  let scoreMean = null
+  let scoreMedian = null
+  let scoreMin = null
+  let scoreMax = null
+  let gameCount = null
+  const initScoreStats = () => {
+    gameCount = p.createSpan("0")
+    gameCount.parent("#gameCount")
+    scoreMean = p.createSpan("0")
+    scoreMean.parent("#scoreMean")
+    scoreMedian = p.createSpan("0")
+    scoreMedian.parent("#scoreMedian")
+    scoreMin = p.createSpan("0")
+    scoreMin.parent("#scoreMin")
+    scoreMax = p.createSpan("0")
+    scoreMax.parent("#scoreMax")
+  }
+  const updateScoreStats = score => {
+    if (score>=0) scores.push(score)
+    scores.sort()
+    const sum = scores.reduce((acc, v) => acc+v, 0)
+    const mid = Math.floor(scores.length/2)
+    gameCount.html(scores.length)
+    scoreMean.html(scores.length>0 ? (sum/scores.length).toFixed(2) : 0)
+    scoreMedian.html(scores.length>0 ? scores[mid] : 0)
+    scoreMin.html(scores.length>0 ? scores[0] : 0)
+    scoreMax.html(scores.length>0 ? scores[scores.length-1] : 0)
+  }
+  const resetScoreStats = () => {
+    scores = []
+    updateScore(0)
+    updateScoreStats(-1)
+  }
+
+  const HUMAN = 0
+  const QLEARN = 1
+  let playerSelect = null
+  const initPlayerSelect = () => {
+    playerSelect = p.createSelect()
+    playerSelect.style('font-size', '13px')
+    playerSelect.parent("#playerSelect")
+    playerSelect.option("Human", HUMAN)
+    playerSelect.option("Q-Learning", QLEARN)
+    playerSelect.value(QLEARN)
+    playerSelect.changed(() => {
+      resetScoreStats()
+      restart()
+    })
+  }
+
+  // Data
   p.frameRate(24)
-  let scale = 15
+  let scale = 5
   const nX = () => 2 * scale
   const nY = () => 2 * scale
   const toX = i => Math.round(i * p.width / nX())
@@ -16,23 +86,17 @@ const sketch = ( p ) => {
     update = {direction: game.EAST}
   }
 
-  const HUMAN = 0
-  const QLEARN = 1
-  let mode = QLEARN
+  // Models
   let qModel = QLearn(500, 300, 1, 0.01, 0.01, 0.9, 0.9, 1, -1)
-
-  // Pre-allocate DOM component vars, cant be inited until setup() is called
-  let canvas = null
-  const initCanvas = () => {
-    canvas = p.createCanvas(500, 500)
-    canvas.parent("#cv")
-  }
 
   /**
    * Setup
    */
   p.setup = () => {
     initCanvas()
+    initScoreCounter()
+    initScoreStats()
+    initPlayerSelect()
     restart()
 
   }
@@ -43,9 +107,13 @@ const sketch = ( p ) => {
   p.draw = () => {
     p.background(240)
     state = next(state, update)
-    if (!state.isAlive) restart()
+    if (state.justEaten) updateScore(calcScore(state))
+    if (!state.isAlive) {
+      updateScoreStats(calcScore(state))
+      restart()
+    }
 
-    if(mode==QLEARN) {
+    if(playerSelect.value()==QLEARN) {
       qModel.update(next, state, state.justEaten)
       update.direction = qModel.getAction(state.snake[0])
       p5QLearn.draw(p, toX, toY, qModel, state)
@@ -58,7 +126,7 @@ const sketch = ( p ) => {
    * Key Pressed
    */
   p.keyPressed = () => {
-    if (mode==HUMAN) {
+    if (playerSelect.value()==HUMAN) {
       const direction = p5Game.processUserInput(p)
       update.direction = direction==null ? update.direction : direction
     }

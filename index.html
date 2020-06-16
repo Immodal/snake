@@ -10,9 +10,23 @@
     <script src="src/sketch.js"></script>
   </head>
   <body>
+    <h1>Snake</h1>
+    <p>Link to repo: <a href="https://github.com/Immodal/snake">Immodal/snake</a>, check out the readme for more info.</p>
     <div style="display: flex; flex-wrap: wrap; justify-content:flex-start;">
       <div id="cv" style="margin-bottom: 1em"></div>
       <div id="col1" style="padding-left: 1em; margin-bottom: 1em">
+        <h3 class="title">Player Selection</h3>
+        <div id="playerSelect"></div>
+        <p>
+          <span id="scoreCount">Score: </span>, 
+          <span id="gameCount">Game Count: </span>
+        </p>
+        <p>
+          <span id="scoreMean">Mean: </span>, 
+          <span id="scoreMedian">Median: </span>,
+          <span id="scoreMin">Min: </span>,
+          <span id="scoreMax">Max: </span>
+        </p>
       </div>
     </div>
   </body>
