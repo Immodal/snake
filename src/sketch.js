@@ -1,3 +1,5 @@
+let qq = null
+
 const sketch = ( p ) => {
   // Pre-allocate DOM component vars, cant be inited until setup() is called
   let canvas = null
@@ -6,6 +8,9 @@ const sketch = ( p ) => {
     canvas.parent("#cv")
   }
 
+  /**
+   * Score Elements
+   */
   let score = 0
   let scoreCounter = null
   const initScoreCounter = () => {
@@ -48,6 +53,9 @@ const sketch = ( p ) => {
     scoreMax.html(scores.length>0 ? scores[scores.length-1] : 0)
   }
 
+  /**
+   * Player Selection Elements
+   */
   const HUMAN = 0
   const QLEARN = 1
   let playerSelect = null
@@ -61,6 +69,9 @@ const sketch = ( p ) => {
     playerSelect.changed(resetGame)
   }
 
+  /**
+   * Game Settings Elements
+   */
   let gameSizeLabel = null
   let gameSizeSlider = null
   const initGameSizeSlider = () => {
@@ -87,18 +98,36 @@ const sketch = ( p ) => {
       gameSpeedLabel.html(gameSpeedSlider.value())
     })
   }
+
+  let drawWallsCb = null
+  let clearWallsBtn = null
+  let makeWalls = false
+  let wallsSave = Walls()
+  const initWallsBtns = () => {
+    drawWallsCb = p.createCheckbox('Draw Walls (pauses game)', false);
+    drawWallsCb.parent("#drawWalls")
+    clearWallsBtn = p.createButton("Clear Walls")
+    clearWallsBtn.parent("#drawWalls")
+    clearWallsBtn.mousePressed(clearWalls)
+  }
+  const clearWalls = () => {
+    wallsSave = Walls()
+    state.walls = wallsSave
+  }
   
   let scale = 15
   const nX = () => 2 * scale
   const nY = () => 2 * scale
-  const toX = i => Math.round(i * p.width / nX())
-  const toY = i => Math.round(i * p.height / nY())
+  const toX = i => Math.floor(i * p.width / nX())
+  const toY = i => Math.floor(i * p.height / nY())
+  const fromX = x => Math.floor(x * nX() / p.width)
+  const fromY = y => Math.floor(y * nY() / p.height)
 
   let next = null
   let state = null
   let update = null
   const restart = () => {
-    next = game.next(nX(), nY())
+    next = game.next(nX(), nY(), wallsSave)
     state = next()
     update = {direction: game.EAST}
     qModel.policy = null
@@ -120,13 +149,14 @@ const sketch = ( p ) => {
     initCanvas()
     initGameSizeSlider()
     initGameSpeedSlider()
+    initWallsBtns()
+
     initScoreCounter()
     initScoreStats()
     initPlayerSelect()
 
     p.frameRate(24)
     resetGame()
-
   }
 
   /**
@@ -134,17 +164,19 @@ const sketch = ( p ) => {
    */
   p.draw = () => {
     p.background(240)
-    state = next(state, update)
-    if (state.justEaten) updateScore(calcScore(state))
-    if (!state.isAlive || state.apple==null) {
-      updateScoreStats(calcScore(state))
-      restart()
-    }
 
-    if(playerSelect.value()==QLEARN) {
-      qModel.update(next, state, state.justEaten)
-      update.direction = qModel.getAction(state.snake[0])
-      p5QLearn.draw(p, toX, toY, qModel, state)
+    if (!drawWallsCb.checked()) {
+      state = next(state, update)
+      if (state.justEaten) updateScore(calcScore(state))
+      if (!state.isAlive || state.apple==null) {
+        updateScoreStats(calcScore(state))
+        restart()
+      }
+      if(playerSelect.value()==QLEARN) {
+        qModel.update(next, state, state.justEaten)
+        update.direction = qModel.getAction(state.snake[0])
+        p5QLearn.draw(p, toX, toY, qModel, state)
+      }
     }
 
     p5Game.draw(p, toX, toY, state)
@@ -159,6 +191,40 @@ const sketch = ( p ) => {
       update.direction = direction==null ? update.direction : direction
     }
   }
+
+  // Required otherwise the Draw Wall feature will add walls to locations outside of canvas
+  const mouseOverCanvas = () => {
+    return p.mouseX <= p.width && p.mouseX >= 0 && p.mouseY <= p.height && p.mouseY >= 0
+  }
+
+  /**
+   * 
+   */
+  p.mousePressed = () => {
+    if (drawWallsCb.checked() && mouseOverCanvas()) {
+      const x = fromX(p.mouseX)
+      const y = fromY(p.mouseY)
+      if (!state.walls.has(x, y)) {
+        makeWalls = true
+        state.walls.add(x, y)
+      } else {
+        makeWalls = false
+        state.walls.delete(x, y)
+      }
+    }
+  }
+
+  /**
+   * Mouse Dragged
+   */
+  p.mouseDragged = () => {
+    if (drawWallsCb.checked() && mouseOverCanvas()) {
+      const x = fromX(p.mouseX)
+      const y = fromY(p.mouseY)
+      if (makeWalls && !state.walls.has(x, y)) state.walls.add(x, y)
+      else if(!makeWalls && state.walls.has(x, y)) state.walls.delete(x, y)
+    }
+  }
 }
 
 /**
@@ -168,9 +234,10 @@ const p5Game = {
   draw: (p, toX, toY, state) => {
     const snake = state.snake
     const apple = state.apple
+    const walls = state.walls
 
-    p.stroke(0)
     // Draw snake
+    p.stroke(0)
     p.strokeWeight(2)
     p.fill(0)
     snake.forEach(node => {
@@ -180,7 +247,17 @@ const p5Game = {
     p.fill(255, 0, 0)
     p.rect(toX(apple.x), toY(apple.y), toX(1), toX(1))
 
+    // Draw Walls
+    p.strokeWeight(2)
+    p.stroke(34,139,34)
+    p.fill(34,139,34)
+    walls.lookup.forEach(node => {
+      p.rect(toX(node.x), toY(node.y), toX(1), toX(1))
+    })
+
+
     // Draw Outer Frame
+    p.stroke(0)
     p.noFill()
     p.strokeWeight(5)
     p.rect(0, 0, p.width, p.height)

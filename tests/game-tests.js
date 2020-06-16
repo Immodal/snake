@@ -28,6 +28,19 @@ const gameTests = {
     eq(false, Node(2, -1).inBounds(5, 5))
   },
 
+  'walls': () => {
+    const walls = Walls()
+    eq(walls.size(), 0)
+    eq(walls.has(10, 6), false)
+    walls.add(10, 6)
+    eq(walls.size(), 1)
+    eq(walls.has(10, 6), true)
+    eq(true, walls.get(10,6).eq(Node(10,6)))
+    walls.delete(10, 6)
+    eq(walls.size(), 0)
+    eq(walls.has(10, 6), false)
+  },
+
   'willEat': () => {
     const head = Node(5,8)
     const apples = [Node(5,8), Node(5,9), Node(4,8)]
@@ -41,15 +54,25 @@ const gameTests = {
     const heads = [Node(5,8), Node(1,1), Node(1,-1), Node(-1,1)]
     const snake1 = [Node(0,0), Node(0,1)]
     const snake2 = [Node(1,1), Node(0,1)]
+    const wallsEmpty = Walls()
+    
+    eq(false, game.willLive(2, 2, heads[0], snake1, wallsEmpty))
+    eq(false, game.willLive(6, 8, heads[0], snake1, wallsEmpty))
+    eq(false, game.willLive(5, 9, heads[0], snake1, wallsEmpty))
+    eq(true, game.willLive(6, 9, heads[0], snake1, wallsEmpty))
+    eq(true, game.willLive(10, 10, heads[1], snake1, wallsEmpty))
+    eq(false, game.willLive(10, 10, heads[1], snake2, wallsEmpty))
+    eq(false, game.willLive(10, 10, heads[2], snake1, wallsEmpty))
+    eq(false, game.willLive(10, 10, heads[3], snake1, wallsEmpty))
 
-    eq(false, game.willLive(2, 2, heads[0], snake1))
-    eq(false, game.willLive(6, 8, heads[0], snake1))
-    eq(false, game.willLive(5, 9, heads[0], snake1))
-    eq(true, game.willLive(6, 9, heads[0], snake1))
-    eq(true, game.willLive(10, 10, heads[1], snake1))
-    eq(false, game.willLive(10, 10, heads[1], snake2))
-    eq(false, game.willLive(10, 10, heads[2], snake1))
-    eq(false, game.willLive(10, 10, heads[3], snake1))
+    const walls1 = Walls()
+    walls1.add(5, 8)
+    eq(false, game.willLive(6, 9, heads[0], snake1, walls1))
+    eq(true, game.willLive(10, 10, heads[1], snake1, walls1))
+    walls1.delete(5, 8)
+    walls1.add(1, 1)
+    eq(true, game.willLive(6, 9, heads[0], snake1, walls1))
+    eq(false, game.willLive(10, 10, heads[1], snake1, walls1))
   },
 
   'nextHead': () => {
@@ -73,17 +96,20 @@ const gameTests = {
 
   'nextApple': () => {
     const snake1 = [Node(0,0), Node(0,1), Node(1,1)]
+    const wall1 = Walls()
+    wall1.add(2,1)
+    wall1.add(2,0)
 
     // Should never return any apples on the snake
     for (let i=0; i<10; i++) {
-      eq(true, Node(1,0).eq(game.nextApple(2,2,snake1)))
+      eq(true, Node(1,0).eq(game.nextApple(3,2,snake1,wall1)))
     }
 
-    let apple = game.nextApple(1000,1000,snake1)
+    let apple = game.nextApple(1000,1000,snake1,wall1)
     let tolerance = 1
     // Should always be different position, but this can still sometimes fail
     for (let i=0; i<10; i++) {
-      let res = apple.eq(game.nextApple(1000,1000,snake1))
+      let res = apple.eq(game.nextApple(1000,1000,snake1,wall1))
       if (res && tolerance>0) {
         tolerance--
         res = false
@@ -98,10 +124,11 @@ const gameTests = {
       var bKeys = Object.keys(b).sort();
       return JSON.stringify(aKeys) === JSON.stringify(bKeys);
     }
-    const next = game.next(10, 9)
+    const next = game.next(10, 9, Walls())
     const dirs = game.DIRECTIONS
     let state = next()
 
+    // Check initial State
     eq(state.nx, 10)
     eq(state.ny, 9)
     eq(state.isAlive, true)
@@ -113,7 +140,9 @@ const gameTests = {
     }))
     eq(true, dirs.some(d => d.eq(state.direction)))
     eq(true, compareKeys(Node(0,0), state.apple))
+    eq(true, compareKeys(Walls(), state.walls))
 
+    // Check initial state advanced by one step
     let state3 = next(state)
     eq(state3.nx, 10)
     eq(state3.ny, 9)
@@ -125,7 +154,9 @@ const gameTests = {
       else return isLinked
     }))
     eq(true, dirs.some(d => d.eq(state.direction)))
+    eq(state3.walls, state.walls)
 
+    // Check custom state
     state.snake = [Node(6,5), Node(5,5)]
     state.apple = Node(6,6)
     let state2 = next(state, {direction: game.SOUTH})

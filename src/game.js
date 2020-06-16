@@ -25,6 +25,25 @@ const Node = (x, y) => {
   return node
 }
 
+const Walls = () => {
+  const walls = {}
+  walls.lookup = new Map()
+
+  walls.encXY = (x, y) => `${x},${y}`
+
+  walls.add = (x, y) => walls.lookup.set(walls.encXY(x,y), Node(x, y))
+
+  walls.delete = (x, y) => walls.lookup.delete(walls.encXY(x,y))
+
+  walls.has = (x, y) => walls.lookup.has(walls.encXY(x,y))
+
+  walls.get = (x, y) => walls.lookup.get(walls.encXY(x,y))
+
+  walls.size = () => walls.lookup.size
+
+  return walls
+}
+
 /**
  * This contains all the functions needed to run the game
  */
@@ -40,7 +59,7 @@ const game = {
   /**
    * Returns a State with mutations based on update
    */
-  next: (nx, ny) => (state=null, update=null) => {
+  next: (nx, ny, walls) => (state=null, update=null) => {
     if (state==null) {
       const snake = [Node(1,0), Node(0,0)]
       return {
@@ -48,7 +67,8 @@ const game = {
         justEaten: true,
         snake: snake,
         direction: game.EAST,
-        apple: game.nextApple(nx, ny, snake),
+        apple: game.nextApple(nx, ny, snake, walls),
+        walls: walls,
         nx: nx,
         ny: ny
       }
@@ -58,16 +78,17 @@ const game = {
       const direction = isValidDir ? update.direction : state.direction 
       const head = game.nextHead(state.snake, direction)
       const willEat = game.willEat(head, state.apple)
-      const willLive = game.willLive(state.nx, state.ny, head, state.snake)
+      const willLive = game.willLive(state.nx, state.ny, head, state.snake, state.walls)
       const snake = willLive ? game.nextSnake(state.snake, head, willEat) : state.snake
       return {
         isAlive: willLive,
         justEaten: willEat,
         snake: snake,
         direction: direction,
-        apple: willEat? game.nextApple(state.nx, state.ny, snake) : state.apple,
-        nx: nx,
-        ny: ny
+        apple: willEat? game.nextApple(state.nx, state.ny, snake, state.walls) : state.apple,
+        walls: state.walls,
+        nx: state.nx,
+        ny: state.ny
       }
     }
   },
@@ -75,7 +96,7 @@ const game = {
   /**
    * 
    */
-   isValidDir: (snake, dir) => dir==null ? false : !game.nextHead(snake, dir).eq(snake[1]),
+  isValidDir: (snake, dir) => dir==null ? false : !game.nextHead(snake, dir).eq(snake[1]),
 
   /**
    * Returns true if head is equal to apple
@@ -85,7 +106,9 @@ const game = {
   /**
    * Returns true if snake does not leave the game area or intercept itself
    */
-  willLive: (nx, ny, head, snake) => head.inBounds(nx, ny) && !snake.some(node => node.eq(head)),
+  willLive: (nx, ny, head, snake, walls) => {
+    return head.inBounds(nx, ny) && !snake.some(node => node.eq(head)) && !walls.has(head.x, head.y)
+  },
   
   /**
    * Returns a Node where the snake's head would be if it moved toward dir
@@ -101,10 +124,10 @@ const game = {
    * Returns a randomly positioned node that excludes any part of snake
    * If null, then the snake has filled all possible positions in the game
    */
-  nextApple: (nx, ny, snake) => {
-    if (snake.length >= nx*ny) return null
+  nextApple: (nx, ny, snake, walls) => {
+    if (snake.length + walls.size() >= nx*ny) return null
     let apple = null
-    while(apple==null || snake.some(node => node.eq(apple))) {
+    while(apple==null || snake.some(node => node.eq(apple)) || walls.has(apple.x, apple.y)) {
       apple = Node(utils.randInt(0, nx-1), utils.randInt(0, ny-1))
     }
     return apple
