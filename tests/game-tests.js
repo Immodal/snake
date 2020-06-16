@@ -61,13 +61,13 @@ const gameTests = {
   },
 
   'nextSnake': () => {
-    const snake1 = [Node(0,0), Node(0,1)]
-    const snake2 = [Node(0,0), Node(0,1), Node(1,1)]
-    const snake3 = [Node(0,1), Node(1,1)]
+    const snake1 = [Node(0,1), Node(0,0)]
+    const snake2 = [Node(1,1), Node(0,1), Node(0,0)]
+    const snake3 = [Node(1,1), Node(0,1)]
 
     eq(true, game.nextSnake(snake1, Node(1,1), true).every((node, i) => node.eq(snake2[i])))
-    eq(false, game.nextSnake(snake1, Node(1,1), true).every((node, i) => node.eq(snake3[i])))
-    eq(false, game.nextSnake(snake1, Node(1,1), false).every((node, i) => node.eq(snake2[i])))
+    eq(false, game.nextSnake(snake1, Node(1,1), true).length == snake3.length)
+    eq(false, game.nextSnake(snake1, Node(1,1), false).length == snake2.length)
     eq(true, game.nextSnake(snake1, Node(1,1), false).every((node, i) => node.eq(snake3[i])))
   },
 
@@ -99,13 +99,13 @@ const gameTests = {
       return JSON.stringify(aKeys) === JSON.stringify(bKeys);
     }
     const next = game.next(10, 9)
-    const dirs = [game.NORTH, game.SOUTH, game.EAST, game.WEST]
+    const dirs = game.DIRECTIONS
     let state = next()
 
     eq(state.nx, 10)
     eq(state.ny, 9)
     eq(state.isAlive, true)
-    eq(state.justEaten, false)
+    eq(state.justEaten, true)
     eq(true, state.snake.reduce((isLinked, node, i, arr)=> {
       if (i==0) return true
       else if (isLinked) return dirs.some(d => arr[i-1].eq(d.sum(node)))
@@ -114,9 +114,23 @@ const gameTests = {
     eq(true, dirs.some(d => d.eq(state.direction)))
     eq(true, compareKeys(Node(0,0), state.apple))
 
-    state.snake = [Node(5,5), Node(6,5)]
+    let state3 = next(state)
+    eq(state3.nx, 10)
+    eq(state3.ny, 9)
+    eq(state3.isAlive, true)
+    eq(state3.justEaten, false)
+    eq(true, state.snake.reduce((isLinked, node, i, arr)=> {
+      if (i==0) return true
+      else if (isLinked) return dirs.some(d => arr[i-1].eq(d.sum(node)))
+      else return isLinked
+    }))
+    eq(true, dirs.some(d => d.eq(state.direction)))
+
+    state.snake = [Node(6,5), Node(5,5)]
     state.apple = Node(6,6)
     let state2 = next(state, {direction: game.SOUTH})
+    eq(false, state == state2) // state should always be a new state
+    eq(false, state.snake == state2.snake) // snake should always be a copy
     eq(state2.nx, 10)
     eq(state2.ny, 9)
     eq(state2.isAlive, true)
