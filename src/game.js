@@ -36,7 +36,7 @@ const game = {
    */
   next: (nx, ny) => (state=null, update=null) => {
     if (state==null) {
-      const snake = [Node(0,0), Node(0,1)]
+      const snake = [Node(0,0), Node(1,0)]
       return {
         isAlive: true,
         justEaten: false,
@@ -49,9 +49,10 @@ const game = {
     } else {
       const head = game.nextHead(state.snake, update.direction)
       const willEat = game.willEat(head, state.apple)
-      const snake = game.nextSnake(state.snake, head, willEat)
+      const willLive = game.willLive(state.nx, state.ny, head, state.snake)
+      const snake = willLive ? game.nextSnake(state.snake, head, willEat) : state.snake
       return {
-        isAlive: game.willLive(state.nx, state.ny, head, state.snake),
+        isAlive: willLive,
         justEaten: willEat,
         snake: snake,
         direction: update.direction,
@@ -93,3 +94,5 @@ const game = {
     return apple
   },
 }
+
+game.DIRECTIONS = [game.NORTH, game.SOUTH, game.EAST, game.WEST]

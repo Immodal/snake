@@ -99,7 +99,7 @@ const gameTests = {
       return JSON.stringify(aKeys) === JSON.stringify(bKeys);
     }
     const next = game.next(10, 9)
-    const dirs = [game.NORTH, game.SOUTH, game.EAST, game.WEST]
+    const dirs = game.DIRECTIONS
     let state = next()
 
     eq(state.nx, 10)
@@ -117,6 +117,8 @@ const gameTests = {
     state.snake = [Node(5,5), Node(6,5)]
     state.apple = Node(6,6)
     let state2 = next(state, {direction: game.SOUTH})
+    eq(false, state == state2) // state should always be a new state
+    eq(false, state.snake == state2.snake) // snake should always be a copy
     eq(state2.nx, 10)
     eq(state2.ny, 9)
     eq(state2.isAlive, true)
