@@ -15,37 +15,37 @@ const QLearn = (nEpisodes, maxSteps, exploreRate, exploreDecay, exploreMin,
   ql.eatReward = eatReward
   ql.deathReward = deathReward
   ql.cumulativePolicy = cumulativePolicy
+
+  ql.actionMap = new Map()
+  game.DIRECTIONS.forEach((d, i) => { ql.actionMap.set(i, d) })
+  game.DIRECTIONS.forEach((d, i) => { ql.actionMap.set(d, i) })
+
   ql.policy = null
 
   /**
    * Returns a policy matrix filled with 0s
    * Policy is a 3D matrix of x columns, y rows, each [x,y] contains 
-   * a map where each value is the predicted reward for its corresponding key (direction)
+   * an value is the predicted reward for its corresponding action (direction)
    */
   ql.initPolicy = (nx, ny) => {
-    const dirMap = () => {
-      const map = new Map()
-      game.DIRECTIONS.forEach(v => map.set(v, 0))
-      return map
-    } 
-    return Array.from(Array(nx), _ => Array.from(Array(ny), _ => dirMap()))
-  }
+    const mkQs = () => Array(game.DIRECTIONS.length).fill(0)
+    return Array.from(Array(nx), _ => Array.from(Array(ny), _ => mkQs()))
+  },
 
   /**
    * Returns the best direction to move in for a given position in the policy
    */
-  ql.getAction = node => {
-    let best = null
-    ql.policy[node.x][node.y].forEach((v, k, m) => {
-      if (best==null || v>m.get(best)) best = k
-    })
-    return best
-  },
+  ql.getAction = node => ql.actionMap.get(ql.getActionIndex(node)),
 
   /**
-   * Returns a random direction to move in
+   * Returns the best action index for a given position in the policy
    */
-  ql.getRandomAction = () => game.DIRECTIONS[utils.randInt(0, game.DIRECTIONS.length-1)],
+  ql.getActionIndex = node =>  ql.getQs(node).reduce((acc, v, i, arr) => i>0 ? (v>arr[acc] ? i : acc) : i, 0),
+
+  /**
+   * Returns a random action index
+   */
+  ql.getRandomActionIndex = () => utils.randInt(0, game.DIRECTIONS.length-1),
 
   /**
    * Returns the Q for a specified location and action
@@ -53,37 +53,24 @@ const QLearn = (nEpisodes, maxSteps, exploreRate, exploreDecay, exploreMin,
   ql.getQs = node => ql.policy[node.x][node.y],
 
   /**
-   * Returns the Q for a specified location and action
+   * Returns the Q for a specified location and action index
    */
-  ql.getQ = (action, node) => ql.getQs(node).get(action),
+  ql.getQ = (i, node) => ql.getQs(node)[i],
 
   /**
-   * Sets the Q at a specified location for a specified action
+   * Sets the Q at a specified location for a specified action index
    */
-  ql.setQ = (action, q, node) => ql.policy[node.x][node.y].set(action, q),
+  ql.setQ = (i, q, node) => ql.policy[node.x][node.y][i] = q
 
   /**
-   * Returns true if all Q in qs are equal
+   * Returns true if all Q in a given position are equal
    */
-  ql.allQEq = node => {
-    let prev = null
-    for (let v of ql.getQs(node).values()) {
-      if(prev==null) prev = v
-      else if(v != prev) return false
-    }
-    return true
-  }
+  ql.allQEq = node => ql.getQs(node).every((q, i, arr) => i>0 ? q==arr[i-1] : true),
 
   /**
-   * Returns the maximum Q in qs
+   * Returns the maximum Q at a given position
    */
-  ql.maxQ = node => {
-    let maxQ = null
-    ql.getQs(node).forEach(v => {
-      if(maxQ==null || v>maxQ) maxQ = v
-    })
-    return maxQ
-  }
+  ql.maxQ = node => ql.getQs(node).reduce((acc, v) => acc>v ? acc : v),
   
   /**
    * Updates the policy resulting from the Q-Learning algorithm based on the given state
@@ -99,13 +86,13 @@ const QLearn = (nEpisodes, maxSteps, exploreRate, exploreDecay, exploreMin,
       for(let step=0; step<maxSteps; step++) {
         const head = s.snake[0]
         // Get an action to try out
-        const a = ql.isExplore(head, exploreRate) ? ql.getRandomAction() : ql.getAction(head)
-        const ns = next(s, {direction: a})
+        const ai = ql.isExplore(head, exploreRate) ? ql.getRandomActionIndex() : ql.getActionIndex(head)
+        const ns = next(s, {direction: ql.actionMap.get(ai)})
         // Get reward based on outcome of the action
         const r = !ns.isAlive ? ql.deathReward : (ns.justEaten ? ql.eatReward : 0)
         // Calculate and update the Q for the current head location
-        const nQ = ql.calcQ(ql.getQ(a, head), r, ql.maxQ(ns.snake[0]))
-        ql.setQ(a, nQ, head)
+        const nQ = ql.calcQ(ql.getQ(ai, head), r, ql.maxQ(ns.snake[0]))
+        ql.setQ(ai, nQ, head)
         // If the snake is dead or just ate, end the episode early, otherwise advance state
         if(!ns.isAlive || ns.justEaten) break
         else s = ns
