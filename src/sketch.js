@@ -89,9 +89,9 @@ const sketch = ( p ) => {
   let gameSpeedLabel = null
   let gameSpeedSlider = null
   const initGameSpeedSlider = () => {
-    gameSpeedLabel = p.createSpan("24")
+    gameSpeedLabel = p.createSpan("60")
     gameSpeedLabel.parent("#gameSpeedLbl")
-    gameSpeedSlider = p.createSlider(1, 24, 24, 1)
+    gameSpeedSlider = p.createSlider(1, 60, 60, 1)
     gameSpeedSlider.parent('#gameSpeed')
     gameSpeedSlider.changed(() => {
       p.frameRate(gameSpeedSlider.value())
@@ -155,7 +155,7 @@ const sketch = ( p ) => {
     initScoreStats()
     initPlayerSelect()
 
-    p.frameRate(24)
+    p.frameRate(gameSpeedSlider.value())
     resetGame()
   }
 
