@@ -22,6 +22,11 @@ const Node = (x, y) => {
    */
   node.sum = n => Node(node.x + n.x, node.y + n.y)
 
+  /**
+   * Returns a new Node with the difference of node and n's components
+   */
+  node.sub = n => Node(node.x - n.x, node.y - n.y)
+
   return node
 }
 
@@ -33,6 +38,8 @@ const NodeMap = () => {
 
   ns.add = (x, y) => ns.lookup.set(ns.encXY(x,y), Node(x, y))
 
+  ns.addNode = node => ns.lookup.set(ns.encXY(node.x,node.y), node)
+
   ns.delete = (x, y) => ns.lookup.delete(ns.encXY(x,y))
 
   ns.has = (x, y) => ns.lookup.has(ns.encXY(x,y))
@@ -40,6 +47,12 @@ const NodeMap = () => {
   ns.get = (x, y) => ns.lookup.get(ns.encXY(x,y))
 
   ns.size = () => ns.lookup.size
+
+  ns.copy = () => {
+    const nsCopy = NodeMap()
+    nsCopy.lookup = new Map(ns.lookup)
+    return nsCopy
+  }
 
   return ns
 }
