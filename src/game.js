@@ -25,23 +25,23 @@ const Node = (x, y) => {
   return node
 }
 
-const Walls = () => {
-  const walls = {}
-  walls.lookup = new Map()
+const NodeMap = () => {
+  const ns = {}
+  ns.lookup = new Map()
 
-  walls.encXY = (x, y) => `${x},${y}`
+  ns.encXY = (x, y) => `${x},${y}`
 
-  walls.add = (x, y) => walls.lookup.set(walls.encXY(x,y), Node(x, y))
+  ns.add = (x, y) => ns.lookup.set(ns.encXY(x,y), Node(x, y))
 
-  walls.delete = (x, y) => walls.lookup.delete(walls.encXY(x,y))
+  ns.delete = (x, y) => ns.lookup.delete(ns.encXY(x,y))
 
-  walls.has = (x, y) => walls.lookup.has(walls.encXY(x,y))
+  ns.has = (x, y) => ns.lookup.has(ns.encXY(x,y))
 
-  walls.get = (x, y) => walls.lookup.get(walls.encXY(x,y))
+  ns.get = (x, y) => ns.lookup.get(ns.encXY(x,y))
 
-  walls.size = () => walls.lookup.size
+  ns.size = () => ns.lookup.size
 
-  return walls
+  return ns
 }
 
 /**

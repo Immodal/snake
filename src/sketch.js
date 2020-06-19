@@ -102,7 +102,7 @@ const sketch = ( p ) => {
   let drawWallsCb = null
   let clearWallsBtn = null
   let makeWalls = false
-  let wallsSave = Walls()
+  let wallsSave = NodeMap()
   const initWallsBtns = () => {
     drawWallsCb = p.createCheckbox('Draw Walls (pauses game)', false);
     drawWallsCb.parent("#drawWalls")
@@ -111,7 +111,7 @@ const sketch = ( p ) => {
     clearWallsBtn.mousePressed(clearWalls)
   }
   const clearWalls = () => {
-    wallsSave = Walls()
+    wallsSave = NodeMap()
     state.walls = wallsSave
   }
   
