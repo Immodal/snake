@@ -1,3 +1,4 @@
+
 /**
  * 
  */
@@ -8,20 +9,19 @@ const ShortestPath = () => {
 
   sp.getAction = node => sp.policy[node.x][node.y]
 
-  sp.search = (state, goal) => {
-    const open = [[null, state.snake[0]]]
-    const closed = state.walls.copy()
-    state.snake.forEach(n => closed.addNode(n))
+  sp.search = (origin, goal, nx, ny, exclusions=NodeMap(), startDir=game.NORTH) => {
+    const open = [[null, origin]]
+    const closed = exclusions
 
     let current = null
     while (open.length>0) {
       current = open.shift()
       if(current[1].eq(goal)) return sp.buildPath(current)
       else {
-        const currentDir = current[0]==null ? state.direction : current[1].sub(current[0][1])
+        const currentDir = current[0]==null ? startDir : current[1].sub(current[0][1])
         const dirs = [currentDir].concat(game.DIRECTIONS.filter(d => !d.eq(currentDir)))
         dirs.map(d => current[1].sum(d))
-          .filter(n => n.inBounds(state.nx, state.ny) && !closed.has(n.x, n.y))
+          .filter(n => n.inBounds(nx, ny) && !closed.has(n.x, n.y))
           .forEach(n => {
             open.push([current, n])
             closed.addNode(n)
@@ -64,7 +64,9 @@ const ShortestPath = () => {
   }
 
   sp.update = (state, goal) => {
-    let path = sp.search(state, goal)
+    const exclusions = state.walls.copy()
+    state.snake.forEach(n => exclusions.addNode(n))
+    let path = sp.search(state.snake[0], goal, state.nx, state.ny, exclusions, state.direction)
     if (path.length>0) {
       sp.path = path
       sp.policy = sp.buildPolicy(state, sp.path)
