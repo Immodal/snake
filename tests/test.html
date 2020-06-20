@@ -4,13 +4,16 @@
 <script src="../src/utils.js"></script>
 <script src="../src/game.js"></script>
 <script src="../src/q-learning.js"></script>
+<script src="../src/shortest-path.js"></script>
 <!--<script src="../src/sketch.js"></script> -->
 <script src="game-tests.js"></script>
 <script src="qLearn-tests.js"></script>
+<script src="shortestPath-tests.js"></script>
 <script>
   let testObj = {}
   Object.assign(testObj, gameTests)
   Object.assign(testObj, QLearnTests)
+  Object.assign(testObj, ShortestPathTests)
   // Run
   tests(testObj)
 </script>

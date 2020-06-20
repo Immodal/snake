@@ -58,6 +58,7 @@ const sketch = ( p ) => {
    */
   const HUMAN = 0
   const QLEARN = 1
+  const SP = 2
   let playerSelect = null
   const initPlayerSelect = () => {
     playerSelect = p.createSelect()
@@ -65,6 +66,7 @@ const sketch = ( p ) => {
     playerSelect.parent("#playerSelect")
     playerSelect.option("Human", HUMAN)
     playerSelect.option("Q-Learning", QLEARN)
+    playerSelect.option("Shortest Path", SP)
     playerSelect.value(QLEARN)
     playerSelect.changed(resetGame)
   }
@@ -131,6 +133,7 @@ const sketch = ( p ) => {
     state = next()
     update = {direction: game.EAST}
     qModel.policy = null
+    spModel = ShortestPath()
   }
   const resetGame = () => {
     scores = []
@@ -141,6 +144,7 @@ const sketch = ( p ) => {
 
   // Models
   let qModel = QLearn(100, 50, 1, 0.05, 0.01, 0.9, 0.9, 1, -1)
+  let spModel = null
 
   /**
    * Setup
@@ -175,7 +179,11 @@ const sketch = ( p ) => {
       if(playerSelect.value()==QLEARN) {
         qModel.update(next, state, state.justEaten)
         update.direction = qModel.getAction(state.snake[0])
-        p5QLearn.draw(p, toX, toY, qModel, state)
+        p5QLearn.draw(p, toX, toY, qModel)
+      } else if(playerSelect.value()==SP) {
+        spModel.update(state, state.apple)
+        update.direction = spModel.getAction(state.snake[0])
+        p5ShortestPath.draw(p, toX, toY, spModel)
       }
     }
 
@@ -273,42 +281,64 @@ const p5Game = {
 }
 
 /**
+ * 
+ */
+const p5Utils = {
+  drawArrow: (p, direction, toX, toY) => {
+    if (direction.eq(game.NORTH)) p5Utils._drawArrow(p, node, 0, -0.5, 0.15, 0, toX, toY)
+    else if (direction.eq(game.SOUTH)) p5Utils._drawArrow(p, node, 0, 0.5, 0.15, 0, toX, toY)
+    else if (direction.eq(game.EAST)) p5Utils._drawArrow(p, node, 0.5, 0, 0, 0.15, toX, toY)
+    else if (direction.eq(game.WEST)) p5Utils._drawArrow(p, node, -0.5, 0, 0, 0.15, toX, toY)
+  },
+
+  _drawArrow: (p, node, tipXMove, tipYMove, baseXMove, baseYMove, toX, toY) => {
+    let x = node.x + 0.5
+    let y = node.y + 0.5
+    p.triangle(
+      toX(x+baseXMove), toY(y+baseYMove), 
+      toX(x+tipXMove), toY(y+tipYMove),
+      toX(x-baseXMove), toY(y-baseYMove)
+    )
+  },
+}
+
+/**
+ * 
+ */
+const p5ShortestPath = {
+  draw: (p, toX, toY, model) => {
+    p.noStroke()
+    p.fill(`rgb(0,191,255)`)
+    model.policy.map((v, i) => v.map((q, j) => {
+      if (q!=null) {
+        node = Node(i,j)
+        p5Utils.drawArrow(p, model.getAction(node), toX, toY)
+      }
+    }))
+  }
+}
+
+/**
  * Draw and Misc UI related functions for QLearn
  */
 const p5QLearn = {
   draw: (p, toX, toY, model) => {
-    // See if the best move (a direction) is equal to dir (a given direction)
-    const matchDir = (node, dir) => model.getAction(node).eq(dir)
-    const max = () => { // Get the largest value in the qTable
-      let maxQ = null
-      for (let i=0; i<model.policy.length; i++) {
-        for (let j=0; j<model.policy[0].length; j++) {
-          const v = model.maxQ(Node(i,j))
-          if (maxQ==null || v>maxQ) maxQ = v
-        }
+    // Get the largest value in the qTable
+    let vmax = null
+    for (let i=0; i<model.policy.length; i++) {
+      for (let j=0; j<model.policy[0].length; j++) {
+        const v = model.maxQ(Node(i,j))
+        if (vmax==null || v>vmax) vmax = v
       }
-      return maxQ
-    }
-    const drawArrow = (node, tipXMove, tipYMove, baseXMove, baseYMove) => {
-      let x = node.x + 0.5
-      let y = node.y + 0.5
-      p.triangle(
-        toX(x+baseXMove), toY(y+baseYMove), 
-        toX(x+tipXMove), toY(y+tipYMove),
-        toX(x-baseXMove), toY(y-baseYMove)
-      )
     }
 
-    const vmax = max()
+    p.noStroke()
     model.policy.map((v, i) => v.map((q, j) => {
       node = Node(i,j)
-      p.noStroke()
-      p.fill(`rgba(0,191,255,${Math.max(0.1, p.map(model.maxQ(node), vmax/6, vmax, 0, 1))})`)
-      if (model.allQEq(node)) {} // Do nothing, if all qs are equal, the move is random
-      else if (matchDir(node, game.NORTH)) drawArrow(node, 0, -0.5, 0.15, 0)
-      else if (matchDir(node, game.SOUTH)) drawArrow(node, 0, 0.5, 0.15, 0)
-      else if (matchDir(node, game.EAST)) drawArrow(node, 0.5, 0, 0, 0.15)
-      else drawArrow(node, -0.5, 0, 0, 0.15)
+      if (!model.allQEq(node)) {
+        p.fill(`rgba(0,191,255,${Math.max(0.1, p.map(model.maxQ(node), vmax/6, vmax, 0, 1))})`)
+        p5Utils.drawArrow(p, model.getAction(node), toX, toY)
+      }
     }))
   }
 }
