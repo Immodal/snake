@@ -148,3 +148,5 @@ const game = {
 }
 
 game.DIRECTIONS = [game.NORTH, game.SOUTH, game.EAST, game.WEST]
+game.DIR_SYMBOLS = ["^", "v", ">", "<"]
+game.DIR_OPPOSITES = [game.SOUTH, game.NORTH, game.EAST, game.WEST]

@@ -14,7 +14,6 @@ const ShortestPathTests = {
     current = [current, Node(1,1)]
     let path = fnShortestPath.buildPath(current)
     let policy = fnShortestPath.buildPolicy(path, 3, 3)
-    console.log(policy)
     let policyExp = [
       [game.EAST, null, null],
       [game.SOUTH, null, null],
