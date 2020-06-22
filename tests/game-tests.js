@@ -28,7 +28,7 @@ const gameTests = {
     eq(false, Node(2, -1).inBounds(5, 5))
   },
 
-  'walls': () => {
+  'NodeMap': () => {
     const walls = NodeMap()
     eq(walls.size(), 0)
     eq(walls.has(10, 6), false)

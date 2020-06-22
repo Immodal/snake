@@ -44,6 +44,8 @@ const NodeMap = () => {
 
   ns.has = (x, y) => ns.lookup.has(ns.encXY(x,y))
 
+  ns.hasNode = node => ns.lookup.has(ns.encXY(node.x,node.y))
+
   ns.get = (x, y) => ns.lookup.get(ns.encXY(x,y))
 
   ns.size = () => ns.lookup.size
@@ -148,5 +150,15 @@ const game = {
 }
 
 game.DIRECTIONS = [game.NORTH, game.SOUTH, game.EAST, game.WEST]
-game.DIR_SYMBOLS = ["^", "v", ">", "<"]
-game.DIR_OPPOSITES = [game.SOUTH, game.NORTH, game.EAST, game.WEST]
+
+game.DIR_SYMBOLS = new Map()
+game.DIR_SYMBOLS.set(game.NORTH, "^")
+game.DIR_SYMBOLS.set(game.SOUTH, "v")
+game.DIR_SYMBOLS.set(game.EAST, ">")
+game.DIR_SYMBOLS.set(game.WEST, "<")
+
+game.DIR_OPPOSITES = new Map()
+game.DIR_OPPOSITES.set(game.NORTH, game.SOUTH)
+game.DIR_OPPOSITES.set(game.SOUTH, game.NORTH)
+game.DIR_OPPOSITES.set(game.EAST, game.WEST)
+game.DIR_OPPOSITES.set(game.WEST, game.EAST)
