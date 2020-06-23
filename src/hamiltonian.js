@@ -104,10 +104,10 @@ fnHamiltonian = {
   },
 
   /**
-   * Returns a NodeMap of all vertices with more than 2 edges remaining
+   * Returns a NodeSet of all vertices with more than 2 edges remaining
    */
   getRemainders: graph => {
-    const rems = NodeMap()
+    const rems = NodeSet()
     for (let i=0; i<graph.length; i++) {
       for (let j=0; j<graph[i].length; j++) {
         if(graph[i][j].nEdges>2) rems.addNode(graph[i][j])
@@ -126,7 +126,7 @@ fnHamiltonian = {
     dn.parent = parent
     dn.dirToParent = parent == null ? null : parent.vertex.sub(dn.vertex)
     dn.length = parent == null ? 1 : parent.length + 1
-    dn.pathVertices = parent == null ? NodeMap() : dn.parent.pathVertices.copy()
+    dn.pathVertices = parent == null ? NodeSet() : dn.parent.pathVertices.copy()
     dn.pathVertices.addNode(dn.vertex)
     // This only works assuming nodes are added to the path correctly
     dn.isDestroyer = dn.length>=4 && dn.length%2==0 && dn.vertex.getEdge(dn.dirToParent)==1 && dn.parent.vertex.getEdge(dn.parent.dirToParent)==0
@@ -164,7 +164,7 @@ fnHamiltonian = {
     }
 
     // Start BFS
-    const open = [fnHamiltonian.DestroyerNode(start, null, false)]
+    const open = [fnHamiltonian.DestroyerNode(start, null)]
     goals.deleteNode(start)
     let current = null
     while (open.length>0 && goals.size()>0) {
@@ -200,6 +200,20 @@ fnHamiltonian = {
       if (remCopy.hasNode(vx)) paths.push(fnHamiltonian.findDestroyer(graph, vx, remCopy))
     })
     return paths
+  },
+
+  /**
+   * Inverts all edges in the path
+   */
+  destroyPath: path => {
+    path.forEach((vx, i) => {
+      if (i<path.length) {
+        const dir = path[i+1].sub(vx)
+        console.log(dir)
+        console.log(game.DIR_OPPOSITES.get(dir))
+        vx.invertEdge(dir)
+      }
+    })
   },
 
   /**

@@ -39,7 +39,7 @@ const ShortestPath = () => {
 }
 
 const fnShortestPath = {
-  search: (origin, goal, nx, ny, exclusions=NodeMap(), startDir=game.NORTH) => {
+  search: (origin, goal, nx, ny, exclusions=NodeSet(), startDir=game.NORTH) => {
     const open = [[null, origin]]
     const closed = exclusions
 

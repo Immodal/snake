@@ -2,7 +2,7 @@ const QLearnTests = {
   'qlearn': () => {
     let nx = 3
     let ny = 4
-    let next = game.next(nx, ny, NodeMap())
+    let next = game.next(nx, ny, NodeSet())
     let state = next()
     let node = Node(1,1)
 

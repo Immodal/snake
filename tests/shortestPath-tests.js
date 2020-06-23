@@ -23,7 +23,7 @@ const ShortestPathTests = {
   },
 
   "search": () => {
-    let exclusions = NodeMap()
+    let exclusions = NodeSet()
     exclusions.addNode(Node(1,0))
     exclusions.addNode(Node(0,0))
     let path = fnShortestPath.search(Node(1,0), Node(2,3), 5, 5, exclusions.copy(), game.EAST)

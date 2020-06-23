@@ -30,7 +30,7 @@ const Node = (x, y) => {
   return node
 }
 
-const NodeMap = () => {
+const NodeSet = () => {
   const ns = {}
   ns.lookup = new Map()
 
@@ -53,7 +53,7 @@ const NodeMap = () => {
   ns.size = () => ns.lookup.size
 
   ns.copy = () => {
-    const nsCopy = NodeMap()
+    const nsCopy = NodeSet()
     nsCopy.lookup = new Map(ns.lookup)
     return nsCopy
   }

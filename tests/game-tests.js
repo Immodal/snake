@@ -28,8 +28,8 @@ const gameTests = {
     eq(false, Node(2, -1).inBounds(5, 5))
   },
 
-  'NodeMap': () => {
-    const walls = NodeMap()
+  'NodeSet': () => {
+    const walls = NodeSet()
     eq(walls.size(), 0)
     eq(walls.has(10, 6), false)
     walls.add(10, 6)
@@ -54,7 +54,7 @@ const gameTests = {
     const heads = [Node(5,8), Node(1,1), Node(1,-1), Node(-1,1)]
     const snake1 = [Node(0,0), Node(0,1)]
     const snake2 = [Node(1,1), Node(0,1)]
-    const wallsEmpty = NodeMap()
+    const wallsEmpty = NodeSet()
     
     eq(false, game.willLive(2, 2, heads[0], snake1, wallsEmpty))
     eq(false, game.willLive(6, 8, heads[0], snake1, wallsEmpty))
@@ -65,7 +65,7 @@ const gameTests = {
     eq(false, game.willLive(10, 10, heads[2], snake1, wallsEmpty))
     eq(false, game.willLive(10, 10, heads[3], snake1, wallsEmpty))
 
-    const walls1 = NodeMap()
+    const walls1 = NodeSet()
     walls1.add(5, 8)
     eq(false, game.willLive(6, 9, heads[0], snake1, walls1))
     eq(true, game.willLive(10, 10, heads[1], snake1, walls1))
@@ -96,7 +96,7 @@ const gameTests = {
 
   'nextApple': () => {
     const snake1 = [Node(0,0), Node(0,1), Node(1,1)]
-    const wall1 = NodeMap()
+    const wall1 = NodeSet()
     wall1.add(2,1)
     wall1.add(2,0)
 
@@ -124,7 +124,7 @@ const gameTests = {
       var bKeys = Object.keys(b).sort();
       return JSON.stringify(aKeys) === JSON.stringify(bKeys);
     }
-    const next = game.next(100, 99, NodeMap())
+    const next = game.next(100, 99, NodeSet())
     const dirs = game.DIRECTIONS
     let state = next()
 
@@ -140,7 +140,7 @@ const gameTests = {
     }))
     eq(true, dirs.some(d => d.eq(state.direction)))
     eq(true, compareKeys(Node(0,0), state.apple))
-    eq(true, compareKeys(NodeMap(), state.walls))
+    eq(true, compareKeys(NodeSet(), state.walls))
 
     // Check initial state advanced by one step
     let state3 = next(state)

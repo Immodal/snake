@@ -178,7 +178,7 @@ const HamiltonianTests = {
     graph[0][1].invertEdge(game.EAST)
     graph[2][1].invertEdge(game.EAST)
 
-    const goals = NodeMap()
+    const goals = NodeSet()
     //goals.addNode(graph[3][2])
     goals.addNode(graph[3][0])
     const paths = []
@@ -208,6 +208,33 @@ const HamiltonianTests = {
       rems.deleteNode(p[p.length-1])
     })
   },
+
+  'destroy paths': () => {
+    const graphExp = ` v> ,  v><,   ><,  v><,  v <, 
+^v  , ^v  ,  v> , ^  <, ^v  , 
+^v> , ^  <, ^v  ,  v> , ^v <, 
+^ > ,   ><, ^  <, ^ > , ^  <, 
+`
+    
+    let graph = fnHamiltonian.mkGraph(5,4)
+
+    graph[0][1].invertEdge(game.EAST)
+    graph[1][1].invertEdge(game.EAST)
+    graph[2][1].invertEdge(game.NORTH)
+    graph[3][1].invertEdge(game.SOUTH)
+    graph[3][1].invertEdge(game.EAST)
+    graph[1][2].invertEdge(game.SOUTH)
+    graph[1][2].invertEdge(game.EAST)
+    graph[2][2].invertEdge(game.EAST)
+    graph[2][3].invertEdge(game.EAST)
+    eq(fnHamiltonian.toString(graph), graphExp)
+
+    const paths = fnHamiltonian.getDestroyerPaths(graph)
+    fnHamiltonian.destroyPath(paths[0])
+    fnHamiltonian.destroyPath(paths[1])
+
+    eq(fnHamiltonian.getRemainders(graph).size(), 0)
+  }
 
   /*'make example fig2': () => {
     const graphExp = ` v> ,  v><,   ><,  v><,  v <, 
