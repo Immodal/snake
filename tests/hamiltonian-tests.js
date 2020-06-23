@@ -1,7 +1,7 @@
 
 const HamiltonianTests = {
   "make Graph": () => {
-    exp44Graph = ` v> ,  v><,  v><,  v <, 
+    const exp44Graph = ` v> ,  v><,  v><,  v <, 
 ^v> , ^v><, ^v><, ^v <, 
 ^v> , ^v><, ^v><, ^v <, 
 ^ > , ^ ><, ^ ><, ^  <, 
@@ -57,13 +57,13 @@ const HamiltonianTests = {
   },
 
   "deletion": () => {
-    exp44Graph = ` v> ,  v><,  v><,  v <, 
+    const exp44Graph = ` v> ,  v><,  v><,  v <, 
 ^v> , ^v><, ^v><, ^v <, 
 ^v> , ^v><, ^v><, ^v <, 
 ^ > , ^ ><, ^ ><, ^  <, 
 `
     const hm = Hamiltonian(4, 4)
-    graph = hm.graph
+    let graph = hm.graph
     for (let i=0; i<graph.length; i++) {
       for (let j=0; j<graph[i].length; j++) {
         game.DIRECTIONS.forEach(d => {
@@ -73,15 +73,28 @@ const HamiltonianTests = {
           }
         })
         eq(true, graph[i][j].nEdges>=2)
+        if (graph[i][j].nEdges>2) {
+          if (i-1>=0) eq(true, graph[i-1][j].nEdges==2)
+          if (j-1>=0) eq(true, graph[i][j-1].nEdges==2)
+          if (i+1<graph.length) eq(true, graph[i+1][j].nEdges==2)
+          if (j+1<graph[i].length) eq(true, graph[i][j+1].nEdges==2)
+        }
       }
     }
     eq(false, exp44Graph == hm.toString(graph))
   },
 
+  'get remainders': () => {
+    const hm = Hamiltonian(2, 2)
+    eq(hm.getRemainders(hm.graph).size(), 0)
+    eq(hm.getRemainders(hm.mkGraph(3, 3)).size(), 5)
+    eq(hm.getRemainders(hm.mkGraph(4, 4)).size(), 12)
+  },
+
   'DestroyerNode': () => {
     const hm = Hamiltonian(4, 4)
     hm.graph = hm.mkGraph(4,4)
-    graph = hm.graph
+    let graph = hm.graph
 
     const dn0 = hm.DestroyerNode(graph[0][0], null)
     eq(dn0.vertex, graph[0][0])
@@ -151,18 +164,90 @@ const HamiltonianTests = {
     eq(true, dn5.dirToParent.eq(game.NORTH))
     eq(dn5.length, 6)
     eq(dn5.isDestroyer, true)
+
+    let path = dn5.toPath()
+    eq(path.length, 6)
+    eq(path[5], dn0.vertex)
+    eq(path[4], dn1.vertex)
+    eq(path[3], dn2.vertex)
+    eq(path[2], dn3.vertex)
+    eq(path[1], dn4.vertex)
+    eq(path[0], dn5.vertex)
   },
 
-  'destroyer': () => {
+  'find destroyer': () => {
     const hm = Hamiltonian(4, 4)
     hm.graph = hm.mkGraph(4,4)
-    graph = hm.graph
+    let graph = hm.graph
 
     graph[0][1].invertEdge(game.EAST)
     graph[2][1].invertEdge(game.EAST)
 
+    const goals = NodeMap()
+    //goals.addNode(graph[3][2])
+    goals.addNode(graph[3][0])
+    const paths = []
+    paths.push(hm.findDestroyer(hm.graph, graph[0][0], goals))
+    eq(goals.size(), 0)
+    eq(paths[0].length, 6)
+    eq(paths[0][5], graph[0][0])
+    eq(paths[0][4], graph[0][1])
+    eq(paths[0][3], graph[1][1])
+    eq(paths[0][2], graph[2][1])
+    eq(paths[0][1], graph[3][1])
+    eq(paths[0][0], graph[3][0])
+  },
+
+  'make example fig2': () => {
+    const graphExp = ` v> ,  v><,   ><,  v><,  v <, 
+^v  , ^v  ,  v> , ^  <, ^v  , 
+^v> , ^  <, ^v  ,  v> , ^v <, 
+^ > ,   ><, ^  <, ^ > , ^  <, 
+`
+    const hm = Hamiltonian(5, 4)
+    hm.graph = hm.mkGraph(5,4)
+    let graph = hm.graph
+
+    graph[0][1].invertEdge(game.EAST)
+    graph[1][1].invertEdge(game.EAST)
+    graph[2][1].invertEdge(game.NORTH)
+    graph[3][1].invertEdge(game.SOUTH)
+    graph[3][1].invertEdge(game.EAST)
+    graph[1][2].invertEdge(game.SOUTH)
+    graph[1][2].invertEdge(game.EAST)
+    graph[2][2].invertEdge(game.EAST)
+    graph[2][3].invertEdge(game.EAST)
+    eq(hm.toString(graph), graphExp)
+
+    const remainders = hm.getRemainders(graph)
+    eq(remainders.size(), 4)
+
+    const remCopy = remainders.copy()
+    const remPaths = []
+    remainders.lookup.forEach(vx => {
+      if (remCopy.hasNode(vx)) remPaths.push(hm.findDestroyer(hm.graph, vx, remCopy))
+    })
+
+    console.log(remPaths.length)
+    remPaths.forEach(p => console.log(p.length))
+    console.log(remPaths)
+  },
+
+  'test': () => {
+    const hm = Hamiltonian(10, 10)
+    const remainders = hm.getRemainders(hm.graph)
+
+    const remCopy = remainders.copy()
+    const remPaths = []
+    remainders.lookup.forEach(vx => {
+      if (remCopy.hasNode(vx)) remPaths.push(hm.findDestroyer(hm.graph, vx, remCopy))
+    })
+
+    console.log("bla")
+    console.log(remainders.size())
     console.log(hm.toString(hm.graph))
-    let paths = hm.destroyer(hm.graph)
-    console.log(paths)
+    console.log(remPaths.length)
+    remPaths.forEach(p => console.log(p.length))
+    console.log(remPaths)
   }
 }

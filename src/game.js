@@ -42,6 +42,8 @@ const NodeMap = () => {
 
   ns.delete = (x, y) => ns.lookup.delete(ns.encXY(x,y))
 
+  ns.deleteNode = node => ns.lookup.delete(ns.encXY(node.x,node.y))
+
   ns.has = (x, y) => ns.lookup.has(ns.encXY(x,y))
 
   ns.hasNode = node => ns.lookup.has(ns.encXY(node.x,node.y))

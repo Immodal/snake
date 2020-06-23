@@ -1,3 +1,4 @@
+// https://springerplus.springeropen.com/articles/10.1186/s40064-016-2746-8
 const Hamiltonian = (nx, ny) => {
   const hm = {}
 
@@ -97,15 +98,29 @@ const Hamiltonian = (nx, ny) => {
         utils.shuffle(ord)
         // Evaluate edges in random order,
         for (let k=0 ; k<ord.length; k++) {
+          if(vx.nEdges<=2) break // no point looping if there at minimum number
           // If there are more than 2 edges and the current edge has not been deleted
           // and will not cause its neighbor to end up with less than 2 edges as well,
-          if (vx.nEdges>2 && vx.getEdge(ord[k])>0 && vx.getNeighbor(ord[k]).nEdges>2) {
+          else if (vx.getEdge(ord[k])>0 && vx.getNeighbor(ord[k]).nEdges>2) {
             // Delete the current edge
             vx.invertEdge(ord[k])
-          } else break // no point looping if there at minimum number
+          }
         }
       }
     }
+  }
+
+  /**
+   * 
+   */
+  hm.getRemainders = graph => {
+    const rems = NodeMap()
+    for (let i=0; i<graph.length; i++) {
+      for (let j=0; j<graph[i].length; j++) {
+        if(graph[i][j].nEdges>2) rems.addNode(graph[i][j])
+      }
+    }
+    return rems
   }
 
   /**
@@ -122,13 +137,22 @@ const Hamiltonian = (nx, ny) => {
     dn.pathVertices.addNode(dn.vertex)
     // This only works assuming nodes are added to the path correctly
     dn.isDestroyer = dn.length>=4 && dn.length%2==0 && dn.vertex.getEdge(dn.dirToParent)==1 && dn.parent.vertex.getEdge(dn.parent.dirToParent)==0
+
+    dn.toPath = () => {
+      const path = []
+      for(c=dn; c!=null; c=c.parent) {
+        path.push(c.vertex)
+      }
+      return path
+    }
+
     return dn
   }
 
   /**
    * 
    */
-  hm.destroyer = graph => {
+  hm.findDestroyer = (graph, start, goals) => {
     const continuePath = (current, dir) => {
       const neighbor = current.vertex.getNeighbor(dir)
       // If the next vertex is not already part of the path, and
@@ -138,18 +162,21 @@ const Hamiltonian = (nx, ny) => {
         (current.length==2 && current.vertex.getEdge(current.dirToParent)==1 && current.vertex.getEdge(dir)==0) ||
         (current.length==3 && current.vertex.getEdge(current.dirToParent)==0 && current.vertex.getEdge(dir)==1) ||
         // If isDestroyer and the next edge has been deleted
-        (current.isDestroyer && current.vertex.getEdge(dir)==0) ||
+        (current.length>=4 && current.isDestroyer && current.vertex.getEdge(dir)==0) ||
         // If not destroyer, parent isDestroyer and the next edge exists
-        (!current.isDestroyer && current.parent.isDestroyer && current.vertex.getEdge(dir)==1)
+        (current.length>=4 && !current.isDestroyer && current.parent.isDestroyer && current.vertex.getEdge(dir)==1)
       )
     }
 
-    const paths = []
-    const open = [hm.DestroyerNode(graph[0][0], null, false)]
+    const open = [hm.DestroyerNode(start, null, false)]
+    goals.deleteNode(start)
     let current = null
-    while (open.length>0) {
-      current = open.pop()
-      let count = 0
+    while (open.length>0 && goals.size()>0) {
+      current = open.shift()
+      if (goals.hasNode(current.vertex)) {
+        goals.deleteNode(current.vertex)
+        return current.toPath()
+      }
       // For each direction from this vertex,
       game.DIRECTIONS.forEach(dir => {
         // Excluding the direction to the parent, add to open if meets criteria.
@@ -157,19 +184,17 @@ const Hamiltonian = (nx, ny) => {
           if(continuePath(current, dir)) {
             const node = current.vertex.sum(dir)
             open.push(hm.DestroyerNode(graph[node.x][node.y], current))
-            count++
           }
         }
       })
-      // if can't extend anymore, get the longest destroyer from this path
-      if (count==0 && current.length>=4) {
-        if (current.length%2==0 && current.isDestroyer) paths.push(current)
-        else if (current.length%2==1 && !current.isDestroyer && current.parent.isDestroyer) paths.push(current.parent)
-      }
     }
 
-    return paths
+    return [start]
   }
+
+  /**
+   * 
+   */
 
   hm.graph = hm.mkGraph(nx, ny)
   hm.deletion()
