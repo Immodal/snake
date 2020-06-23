@@ -7,15 +7,14 @@ const HamiltonianTests = {
 ^ > , ^ ><, ^ ><, ^  <, 
 `
 
-    const hm = Hamiltonian(4, 4)
-    hm.graph = hm.mkGraph(4,4)
-    eq(hm.toString(hm.graph), exp44Graph)
+    let graph = fnHamiltonian.mkGraph(4,4)
+    eq(fnHamiltonian.toString(graph), exp44Graph)
   },
 
   "Vertex": () => {
-    const hm = Hamiltonian(4, 4)
+    let graph = fnHamiltonian.mkGraph(4,4)
     // Vertex set/get edge
-    let vx = hm.Vertex(0,0)
+    let vx = fnHamiltonian.Vertex(0,0,graph)
     eq(vx.nEdges, 4)
     vx.setEdge(game.EAST, 0)
     eq(vx.nEdges, 3)
@@ -25,9 +24,9 @@ const HamiltonianTests = {
     eq(vx.getEdge(game.SOUTH), 1)
     eq(vx.getEdge(game.EAST), -1)
     eq(vx.getEdge(game.WEST), 1)
+    vx.setEdge(game.EAST, 1)
+    eq(vx.getEdge(game.EAST), 1)
 
-    hm.graph = hm.mkGraph(4,4)
-    let graph = hm.graph
     // vertex get neighbor
     eq(graph[1][1].getNeighbor(game.NORTH), graph[1][0])
     eq(graph[1][1].getNeighbor(game.SOUTH), graph[1][2])
@@ -62,8 +61,9 @@ const HamiltonianTests = {
 ^v> , ^v><, ^v><, ^v <, 
 ^ > , ^ ><, ^ ><, ^  <, 
 `
-    const hm = Hamiltonian(4, 4)
-    let graph = hm.graph
+
+    let graph = fnHamiltonian.mkGraph(4,4)
+    fnHamiltonian.runDeletion(graph)
     for (let i=0; i<graph.length; i++) {
       for (let j=0; j<graph[i].length; j++) {
         game.DIRECTIONS.forEach(d => {
@@ -81,22 +81,19 @@ const HamiltonianTests = {
         }
       }
     }
-    eq(false, exp44Graph == hm.toString(graph))
+    eq(false, exp44Graph == fnHamiltonian.toString(graph))
   },
 
   'get remainders': () => {
-    const hm = Hamiltonian(2, 2)
-    eq(hm.getRemainders(hm.graph).size(), 0)
-    eq(hm.getRemainders(hm.mkGraph(3, 3)).size(), 5)
-    eq(hm.getRemainders(hm.mkGraph(4, 4)).size(), 12)
+    eq(fnHamiltonian.getRemainders(fnHamiltonian.mkGraph(2, 2)).size(), 0)
+    eq(fnHamiltonian.getRemainders(fnHamiltonian.mkGraph(3, 3)).size(), 5)
+    eq(fnHamiltonian.getRemainders(fnHamiltonian.mkGraph(4, 4)).size(), 12)
   },
 
   'DestroyerNode': () => {
-    const hm = Hamiltonian(4, 4)
-    hm.graph = hm.mkGraph(4,4)
-    let graph = hm.graph
+    let graph = fnHamiltonian.mkGraph(4,4)
 
-    const dn0 = hm.DestroyerNode(graph[0][0], null)
+    const dn0 = fnHamiltonian.DestroyerNode(graph[0][0], null)
     eq(dn0.vertex, graph[0][0])
     eq(dn0.parent, null)
     eq(dn0.dirToParent, null)
@@ -106,7 +103,7 @@ const HamiltonianTests = {
     eq(dn0.isDestroyer, false)
 
     // Add a node
-    const dn1 = hm.DestroyerNode(graph[0][1], dn0)
+    const dn1 = fnHamiltonian.DestroyerNode(graph[0][1], dn0)
     eq(dn1.vertex, graph[0][1])
     eq(dn1.parent, dn0)
     eq(true, dn1.dirToParent.eq(game.NORTH))
@@ -117,14 +114,14 @@ const HamiltonianTests = {
     eq(dn1.length, 2)
     eq(dn1.isDestroyer, false)
 
-    const dn2 = hm.DestroyerNode(graph[1][1], dn1)
+    const dn2 = fnHamiltonian.DestroyerNode(graph[1][1], dn1)
     eq(dn2.vertex, graph[1][1])
     eq(dn2.parent, dn1)
     eq(true, dn2.dirToParent.eq(game.WEST))
     eq(dn2.length, 3)
     eq(dn2.isDestroyer, false)
 
-    let dn3 = hm.DestroyerNode(graph[2][1], dn2)
+    let dn3 = fnHamiltonian.DestroyerNode(graph[2][1], dn2)
     eq(dn3.vertex, graph[2][1])
     eq(dn3.parent, dn2)
     eq(true, dn3.dirToParent.eq(game.WEST))
@@ -134,21 +131,21 @@ const HamiltonianTests = {
     // Add alternation
     graph[0][1].invertEdge(game.EAST)
 
-    dn3 = hm.DestroyerNode(graph[2][1], dn2)
+    dn3 = fnHamiltonian.DestroyerNode(graph[2][1], dn2)
     eq(dn3.vertex, graph[2][1])
     eq(dn3.parent, dn2)
     eq(true, dn3.dirToParent.eq(game.WEST))
     eq(dn3.length, 4)
     eq(dn3.isDestroyer, true)
 
-    let dn4 = hm.DestroyerNode(graph[3][1], dn3)
+    let dn4 = fnHamiltonian.DestroyerNode(graph[3][1], dn3)
     eq(dn4.vertex, graph[3][1])
     eq(dn4.parent, dn3)
     eq(true, dn4.dirToParent.eq(game.WEST))
     eq(dn4.length, 5)
     eq(dn4.isDestroyer, false)
 
-    let dn5 = hm.DestroyerNode(graph[3][2], dn4)
+    let dn5 = fnHamiltonian.DestroyerNode(graph[3][2], dn4)
     eq(dn5.vertex, graph[3][2])
     eq(dn5.parent, dn4)
     eq(true, dn5.dirToParent.eq(game.NORTH))
@@ -158,7 +155,7 @@ const HamiltonianTests = {
     // Add alternation
     graph[2][1].invertEdge(game.EAST)
 
-    dn5 = hm.DestroyerNode(graph[3][2], dn4)
+    dn5 = fnHamiltonian.DestroyerNode(graph[3][2], dn4)
     eq(dn5.vertex, graph[3][2])
     eq(dn5.parent, dn4)
     eq(true, dn5.dirToParent.eq(game.NORTH))
@@ -176,9 +173,7 @@ const HamiltonianTests = {
   },
 
   'find destroyer': () => {
-    const hm = Hamiltonian(4, 4)
-    hm.graph = hm.mkGraph(4,4)
-    let graph = hm.graph
+    let graph = fnHamiltonian.mkGraph(4,4)
 
     graph[0][1].invertEdge(game.EAST)
     graph[2][1].invertEdge(game.EAST)
@@ -187,7 +182,7 @@ const HamiltonianTests = {
     //goals.addNode(graph[3][2])
     goals.addNode(graph[3][0])
     const paths = []
-    paths.push(hm.findDestroyer(hm.graph, graph[0][0], goals))
+    paths.push(fnHamiltonian.findDestroyer(graph, graph[0][0], goals))
     eq(goals.size(), 0)
     eq(paths[0].length, 6)
     eq(paths[0][5], graph[0][0])
@@ -198,14 +193,14 @@ const HamiltonianTests = {
     eq(paths[0][0], graph[3][0])
   },
 
-  'find destroyer paths': () => {
-    const hm = Hamiltonian(10, 10)
-    hm.graph = hm.mkGraph(10,10)
-    hm.deletion(hm.graph)
-    const paths = hm.getDestroyerPaths(hm.graph)
+  'get destroyer paths': () => {
+    let graph = fnHamiltonian.mkGraph(10,10)
+    fnHamiltonian.runDeletion(graph)
+    const paths = fnHamiltonian.getDestroyerPaths(graph)
+    const rems = fnHamiltonian.getRemainders(graph)
 
-    const rems = hm.getRemainders(hm.graph)
     eq(rems.size()/2, paths.length)
+    // Make sure that the paths start and end with vertices in rems
     paths.forEach(p => {
       eq(rems.hasNode(p[0]), true)
       rems.deleteNode(p[0])
@@ -214,15 +209,14 @@ const HamiltonianTests = {
     })
   },
 
-  'make example fig2': () => {
+  /*'make example fig2': () => {
     const graphExp = ` v> ,  v><,   ><,  v><,  v <, 
 ^v  , ^v  ,  v> , ^  <, ^v  , 
 ^v> , ^  <, ^v  ,  v> , ^v <, 
 ^ > ,   ><, ^  <, ^ > , ^  <, 
 `
-    const hm = Hamiltonian(5, 4)
-    hm.graph = hm.mkGraph(5,4)
-    let graph = hm.graph
+
+    let graph = fnHamiltonian.mkGraph(5,4)
 
     graph[0][1].invertEdge(game.EAST)
     graph[1][1].invertEdge(game.EAST)
@@ -233,19 +227,17 @@ const HamiltonianTests = {
     graph[1][2].invertEdge(game.EAST)
     graph[2][2].invertEdge(game.EAST)
     graph[2][3].invertEdge(game.EAST)
-    eq(hm.toString(graph), graphExp)
+    eq(fnHamiltonian.toString(graph), graphExp)
 
-    const remainders = hm.getRemainders(graph)
+    const remainders = fnHamiltonian.getRemainders(graph)
     eq(remainders.size(), 4)
 
-    const remCopy = remainders.copy()
-    const remPaths = []
-    remainders.lookup.forEach(vx => {
-      if (remCopy.hasNode(vx)) remPaths.push(hm.findDestroyer(hm.graph, vx, remCopy))
-    })
-
-    console.log(remPaths.length)
-    remPaths.forEach(p => console.log(p.length))
-    console.log(remPaths)
-  },
+    const paths = fnHamiltonian.getDestroyerPaths(graph)
+    console.log(paths)
+    eq(paths.length, 2)
+    eq(paths[0][0].eq(Node(1,0)), true)
+    eq(paths[0][paths[0].length-1].eq(Node(0,2)), true)
+    eq(paths[1][0].eq(Node(1,0)), true)
+    eq(paths[1][paths[1].length-1].eq(Node(0,2)), true)
+  },*/
 }

@@ -1,21 +1,34 @@
-// https://springerplus.springeropen.com/articles/10.1186/s40064-016-2746-8
+
 const Hamiltonian = (nx, ny) => {
   const hm = {}
 
-  hm.Vertex = (x, y) => {
+  return hm
+}
+
+// https://springerplus.springeropen.com/articles/10.1186/s40064-016-2746-8
+fnHamiltonian = {
+  /**
+   * Child class of Node that also includes methods for tracking and modifying its edges
+   */
+  Vertex: (x, y, graph) => {
     const vx = Node(x, y)
-    vx.edges = hm.EdgeMap()
+    vx.graph = graph
+    vx.edges = fnHamiltonian.EdgeMap()
     game.DIRECTIONS.forEach(dir => vx.edges.set(dir, 1))
     vx.nEdges = game.DIRECTIONS.length
 
+    // Set Edge to a specific value
     vx.setEdge = (dir, value) => {
       if (value>0 && vx.edges.get(dir)<=0) vx.nEdges++
       else if (value<=0 && vx.edges.get(dir)>0) vx.nEdges--
       vx.edges.set(dir, value)
     }
 
+    // Returns the value of an end in a given direction
     vx.getEdge = dir => vx.edges.get(dir)
 
+    // Invert the value of an edge between 0 and 1 (also affects its neighbor)
+    // Has no effect on values less than 0
     vx.invertEdge = dir => { 
       if (vx.getEdge(dir)>=0) {
         vx.setEdge(dir, vx.getEdge(dir)>0 ? 0 : 1) 
@@ -23,39 +36,39 @@ const Hamiltonian = (nx, ny) => {
       }
     }
 
+    // Returns the neighboring Vertex in a given direction
     vx.getNeighbor = dir => {
       const node = vx.sum(dir)
-      return node.inBounds(hm.graph.length, hm.graph[0].length) ? hm.graph[node.x][node.y] : null
+      return node.inBounds(vx.graph.length, vx.graph[0].length) ? vx.graph[node.x][node.y] : null
     }
 
     return vx
-  }
+  },
 
-  hm.EdgeMap = () => {
+  /**
+   * Object that maps a value to a direction (Node)
+   */
+  EdgeMap: () => {
     const em = {}
     em.lookup = new Map()
-
     em.encXY = (x, y) => `${x},${y}`
-
     em.set = (dir, value) => em.lookup.set(em.encXY(dir.x, dir.y), value)
-  
     em.get = dir => em.lookup.get(em.encXY(dir.x,dir.y))
-  
     em.size = () => em.lookup.size
 
     return em
-  }
+  },
 
   /**
    * Returns a graph of width nx and height ny where all vertexes are connected to their 
    * North, South, East and West neighbors (except at the 4 sides of the graph)
    */
-  hm.mkGraph = (nx, ny) => {
+  mkGraph: (nx, ny) => {
     const graph = Array.from(Array(nx), _ => Array.from(Array(ny), _ => null))
     // 1 for edge, 0 for deleted edge, -1 for no edge
     for (let i=0; i<graph.length; i++) {
       for (let j=0; j<graph[i].length; j++) {
-        graph[i][j] = hm.Vertex(i, j)
+        graph[i][j] = fnHamiltonian.Vertex(i, j, graph)
         // No edges at the ends of the graph
         if (i==0) graph[i][j].setEdge(game.WEST, -1)
         else if (i==graph.length-1) graph[i][j].setEdge(game.EAST, -1)
@@ -64,31 +77,12 @@ const Hamiltonian = (nx, ny) => {
       }
     }
     return graph
-  }
+  },
 
   /**
-   * Returns a string representation of the given graph
+   * Randomly delete surplus edges in place from each vertex until there are none remaining
    */
-  hm.toString = graph => {
-    let string = ""
-    for (let j=0; j<graph[0].length; j++) {
-      for (let i=0; i<graph.length; i++) {
-        for (let k=0; k<game.DIRECTIONS.length; k++) {
-          const v = graph[i][j].getEdge(game.DIRECTIONS[k])
-          if (v == 1) string += game.DIR_SYMBOLS.get(game.DIRECTIONS[k])
-          else string += " "
-        }
-        string += ", "
-      }
-      string += "\n"
-    }
-    return string
-  }
-
-  /**
-   * Randomly delete surplus edges from each vertex until there are none remaining
-   */
-  hm.deletion = graph => {
+  runDeletion: graph => {
     for (let i=0; i<graph.length; i++) {
       for (let j=0; j<graph[i].length; j++) {
         // In vertex[i,j],
@@ -107,12 +101,12 @@ const Hamiltonian = (nx, ny) => {
         }
       }
     }
-  }
+  },
 
   /**
-   * 
+   * Returns a NodeMap of all vertices with more than 2 edges remaining
    */
-  hm.getRemainders = graph => {
+  getRemainders: graph => {
     const rems = NodeMap()
     for (let i=0; i<graph.length; i++) {
       for (let j=0; j<graph[i].length; j++) {
@@ -120,12 +114,12 @@ const Hamiltonian = (nx, ny) => {
       }
     }
     return rems
-  }
+  },
 
   /**
-   * 
+   * Object used to track the progress of a path, used in findDestroyer()
    */
-  hm.DestroyerNode = (vertex, parent) => {
+  DestroyerNode: (vertex, parent) => {
     const dn = {}
     
     dn.vertex = vertex
@@ -146,12 +140,14 @@ const Hamiltonian = (nx, ny) => {
     }
 
     return dn
-  }
+  },
 
   /**
-   * 
+   * Returns the shortest Destroyer path found between start and any one of the goals
+   * This mutates the goals object by deleting the vertices that are part of the path
    */
-  hm.findDestroyer = (graph, start, goals) => {
+  findDestroyer: (graph, start, goals) => {
+    // Decide whether the path still or can still meet requirements for being a Destroyer
     const continuePath = (current, dir) => {
       const neighbor = current.vertex.getNeighbor(dir)
       // If the next vertex is not already part of the path, and
@@ -167,7 +163,8 @@ const Hamiltonian = (nx, ny) => {
       )
     }
 
-    const open = [hm.DestroyerNode(start, null, false)]
+    // Start BFS
+    const open = [fnHamiltonian.DestroyerNode(start, null, false)]
     goals.deleteNode(start)
     let current = null
     while (open.length>0 && goals.size()>0) {
@@ -182,31 +179,46 @@ const Hamiltonian = (nx, ny) => {
         if(current.parent==null || !dir.eq(current.dirToParent)) {
           if(continuePath(current, dir)) {
             const node = current.vertex.sum(dir)
-            open.push(hm.DestroyerNode(graph[node.x][node.y], current))
+            open.push(fnHamiltonian.DestroyerNode(graph[node.x][node.y], current))
           }
         }
       })
     }
 
     return [start]
-  }
+  },
 
   /**
-   * Gets the 
+   * Returns an array of destroyer paths in a given graph
+   * These paths start and end at remainder nodes (more than 2 edges)
    */
-  hm.getDestroyerPaths = graph => {
-    const remainders = hm.getRemainders(hm.graph)
+  getDestroyerPaths: graph => {
+    const remainders = fnHamiltonian.getRemainders(graph)
     const remCopy = remainders.copy()
     const paths = []
     remainders.lookup.forEach(vx => {
-      if (remCopy.hasNode(vx)) paths.push(hm.findDestroyer(hm.graph, vx, remCopy))
+      if (remCopy.hasNode(vx)) paths.push(fnHamiltonian.findDestroyer(graph, vx, remCopy))
     })
     return paths
-  }
+  },
 
-  hm.graph = hm.mkGraph(nx, ny)
-  hm.deletion(hm.graph)
-
-  
-  return hm
+  /**
+   * Returns a string representation of the given graph
+   */
+  toString: graph => {
+    let string = ""
+    // Rows first and then Columns
+    for (let j=0; j<graph[0].length; j++) {
+      for (let i=0; i<graph.length; i++) {
+        for (let k=0; k<game.DIRECTIONS.length; k++) {
+          const v = graph[i][j].getEdge(game.DIRECTIONS[k])
+          if (v == 1) string += game.DIR_SYMBOLS.get(game.DIRECTIONS[k])
+          else string += " "
+        }
+        string += ", "
+      }
+      string += "\n"
+    }
+    return string
+  },
 }
