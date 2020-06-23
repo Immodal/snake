@@ -88,8 +88,7 @@ const Hamiltonian = (nx, ny) => {
   /**
    * Randomly delete surplus edges from each vertex until there are none remaining
    */
-  hm.deletion = () => {
-    const graph = hm.graph
+  hm.deletion = graph => {
     for (let i=0; i<graph.length; i++) {
       for (let j=0; j<graph[i].length; j++) {
         // In vertex[i,j],
@@ -193,11 +192,21 @@ const Hamiltonian = (nx, ny) => {
   }
 
   /**
-   * 
+   * Gets the 
    */
+  hm.getDestroyerPaths = graph => {
+    const remainders = hm.getRemainders(hm.graph)
+    const remCopy = remainders.copy()
+    const paths = []
+    remainders.lookup.forEach(vx => {
+      if (remCopy.hasNode(vx)) paths.push(hm.findDestroyer(hm.graph, vx, remCopy))
+    })
+    return paths
+  }
 
   hm.graph = hm.mkGraph(nx, ny)
-  hm.deletion()
+  hm.deletion(hm.graph)
+
   
   return hm
 }

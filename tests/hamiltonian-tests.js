@@ -198,6 +198,22 @@ const HamiltonianTests = {
     eq(paths[0][0], graph[3][0])
   },
 
+  'find destroyer paths': () => {
+    const hm = Hamiltonian(10, 10)
+    hm.graph = hm.mkGraph(10,10)
+    hm.deletion(hm.graph)
+    const paths = hm.getDestroyerPaths(hm.graph)
+
+    const rems = hm.getRemainders(hm.graph)
+    eq(rems.size()/2, paths.length)
+    paths.forEach(p => {
+      eq(rems.hasNode(p[0]), true)
+      rems.deleteNode(p[0])
+      eq(rems.hasNode(p[p.length-1]), true)
+      rems.deleteNode(p[p.length-1])
+    })
+  },
+
   'make example fig2': () => {
     const graphExp = ` v> ,  v><,   ><,  v><,  v <, 
 ^v  , ^v  ,  v> , ^  <, ^v  , 
@@ -232,22 +248,4 @@ const HamiltonianTests = {
     remPaths.forEach(p => console.log(p.length))
     console.log(remPaths)
   },
-
-  'test': () => {
-    const hm = Hamiltonian(10, 10)
-    const remainders = hm.getRemainders(hm.graph)
-
-    const remCopy = remainders.copy()
-    const remPaths = []
-    remainders.lookup.forEach(vx => {
-      if (remCopy.hasNode(vx)) remPaths.push(hm.findDestroyer(hm.graph, vx, remCopy))
-    })
-
-    console.log("bla")
-    console.log(remainders.size())
-    console.log(hm.toString(hm.graph))
-    console.log(remPaths.length)
-    remPaths.forEach(p => console.log(p.length))
-    console.log(remPaths)
-  }
 }
