@@ -13,7 +13,7 @@ fnHamiltonian = {
   Vertex: (x, y, graph) => {
     const vx = Node(x, y)
     vx.graph = graph
-    vx.edges = fnHamiltonian.EdgeMap()
+    vx.edges = NodeMap()
     game.DIRECTIONS.forEach(dir => vx.edges.set(dir, 1))
     vx.nEdges = game.DIRECTIONS.length
 
@@ -43,20 +43,6 @@ fnHamiltonian = {
     }
 
     return vx
-  },
-
-  /**
-   * Object that maps a value to a direction (Node)
-   */
-  EdgeMap: () => {
-    const em = {}
-    em.lookup = new Map()
-    em.encXY = (x, y) => `${x},${y}`
-    em.set = (dir, value) => em.lookup.set(em.encXY(dir.x, dir.y), value)
-    em.get = dir => em.lookup.get(em.encXY(dir.x,dir.y))
-    em.size = () => em.lookup.size
-
-    return em
   },
 
   /**
@@ -203,11 +189,11 @@ fnHamiltonian = {
   },
 
   /**
-   * Inverts all edges in the path
+   * Inverts all edges in the path, 10101 becomes 01010
    */
   destroyPath: path => {
     path.forEach((vx, i) => {
-      if (i<path.length) {
+      if (i<path.length-1) {
         const dir = path[i+1].sub(vx)
         console.log(dir)
         console.log(game.DIR_OPPOSITES.get(dir))

@@ -30,6 +30,24 @@ const Node = (x, y) => {
   return node
 }
 
+/**
+ * Object that maps a value to a location
+ */
+
+const NodeMap = () => {
+  const nm = {}
+  nm.lookup = new Map()
+  nm.encXY = (x, y) => `${x},${y}`
+  nm.set = (node, value) => nm.lookup.set(nm.encXY(node.x, node.y), value)
+  nm.get = node => nm.lookup.get(nm.encXY(node.x,node.y))
+  nm.size = () => nm.lookup.size
+
+  return nm
+}
+
+/**
+ * Object that maps a Node to a location
+ */
 const NodeSet = () => {
   const ns = {}
   ns.lookup = new Map()
@@ -153,13 +171,13 @@ const game = {
 
 game.DIRECTIONS = [game.NORTH, game.SOUTH, game.EAST, game.WEST]
 
-game.DIR_SYMBOLS = new Map()
+game.DIR_SYMBOLS = NodeMap()
 game.DIR_SYMBOLS.set(game.NORTH, "^")
 game.DIR_SYMBOLS.set(game.SOUTH, "v")
 game.DIR_SYMBOLS.set(game.EAST, ">")
 game.DIR_SYMBOLS.set(game.WEST, "<")
 
-game.DIR_OPPOSITES = new Map()
+game.DIR_OPPOSITES = NodeMap()
 game.DIR_OPPOSITES.set(game.NORTH, game.SOUTH)
 game.DIR_OPPOSITES.set(game.SOUTH, game.NORTH)
 game.DIR_OPPOSITES.set(game.EAST, game.WEST)
