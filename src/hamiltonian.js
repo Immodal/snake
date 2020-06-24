@@ -190,16 +190,61 @@ fnHamiltonian = {
 
   /**
    * Inverts all edges in the path, 10101 becomes 01010
+   * When used on a destroyer path where the start and end vertices have 3 edges each,
+   * It will reduce them both down to 2 edges while maintaining the same number of edges for
+   * all other vertices in the path.
    */
   destroyPath: path => {
     path.forEach((vx, i) => {
       if (i<path.length-1) {
         const dir = path[i+1].sub(vx)
-        console.log(dir)
-        console.log(game.DIR_OPPOSITES.get(dir))
         vx.invertEdge(dir)
       }
     })
+  },
+
+  /**
+   * Returns true if the graph contains a Hamiltonian cycle
+   */
+  isHamiltonianCycle: graph => {
+    // Get a direction to move in from the vertex
+    const getMove = (vx, exDir=null) => {
+      for (let i=0; i<game.DIRECTIONS.length; i++) {
+        if (vx.getEdge(game.DIRECTIONS[i])>0 && (exDir==null ? true : !game.DIRECTIONS[i].eq(exDir))) {
+          return game.DIRECTIONS[i]
+        }
+      }
+      return null
+    }
+
+    const exclusions = NodeSet()
+    const pathVertices = NodeSet()
+    let start = null
+    // Check that all vertices are valid
+    for (let i=0; i<graph.length; i++) {
+      for (let j=0; j<graph[i].length; j++) {
+        // No edges means it is deliberately excluded from the path
+        if(graph[i][j].nEdges==0) exclusions.addNode(graph[i][j]) 
+        // Must only have 2 edges
+        else if (graph[i][j].nEdges!=2) return false 
+        else if (start==null) start = graph[i][j]
+      }
+    }
+
+    // Go through the path and check if it is a Hamiltonian Cycle
+    pathVertices.addNode(start)
+    let prevDir = getMove(start)
+    let current = start.getNeighbor(prevDir)
+    while (!pathVertices.hasNode(current) && !exclusions.hasNode(current)) {
+      pathVertices.addNode(current)
+      prevDir = getMove(current, game.DIR_OPPOSITES.get(prevDir))
+      current = current.getNeighbor(prevDir)
+      if (current==null) break
+    }
+
+    const nVx = pathVertices.size() + exclusions.size()
+    const nGraphVx = graph.length * graph[0].length
+    return current!=null && current == start && nVx==nGraphVx
   },
 
   /**

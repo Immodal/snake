@@ -234,6 +234,32 @@ const HamiltonianTests = {
     fnHamiltonian.destroyPath(paths[1])
 
     eq(fnHamiltonian.getRemainders(graph).size(), 0)
+  },
+
+  'is hamiltonian cycle': () => {
+    const exp44Graph = ` v> ,   ><,   ><,  v <, 
+^v  ,  v> ,  v <, ^v  , 
+^v  , ^v  , ^v  , ^v  , 
+^ > , ^  <, ^ > , ^  <, 
+`
+    let graph = fnHamiltonian.mkGraph(4,4)
+    eq(fnHamiltonian.isHamiltonianCycle(graph), false)
+    graph[1][0].invertEdge(game.SOUTH)
+    graph[2][0].invertEdge(game.SOUTH)
+    graph[3][1].invertEdge(game.WEST)
+    graph[3][2].invertEdge(game.WEST)
+    graph[2][3].invertEdge(game.WEST)
+    graph[2][2].invertEdge(game.WEST)
+    graph[1][1].invertEdge(game.WEST)
+    graph[1][2].invertEdge(game.WEST)
+    eq(fnHamiltonian.toString(graph), exp44Graph)
+    eq(fnHamiltonian.isHamiltonianCycle(graph), true)
+    // Make two unconnected cycles
+    graph[1][0].invertEdge(game.SOUTH)
+    graph[2][0].invertEdge(game.SOUTH)
+    graph[1][0].invertEdge(game.EAST)
+    graph[1][1].invertEdge(game.EAST)
+    eq(fnHamiltonian.isHamiltonianCycle(graph), false)
   }
 
   /*'make example fig2': () => {
