@@ -22,6 +22,8 @@ const QLearn = (nEpisodes, maxSteps, exploreRate, exploreDecay, exploreMin,
 
   ql.policy = null
 
+  ql.reset = () => ql.policy = null
+
   /**
    * Returns a policy matrix filled with 0s
    * Policy is a 3D matrix of x columns, y rows, each [x,y] contains 

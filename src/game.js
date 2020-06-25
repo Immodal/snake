@@ -30,7 +30,25 @@ const Node = (x, y) => {
   return node
 }
 
+/**
+ * Object that maps a value to a location
+ */
+
 const NodeMap = () => {
+  const nm = {}
+  nm.lookup = new Map()
+  nm.encXY = (x, y) => `${x},${y}`
+  nm.set = (node, value) => nm.lookup.set(nm.encXY(node.x, node.y), value)
+  nm.get = node => nm.lookup.get(nm.encXY(node.x,node.y))
+  nm.size = () => nm.lookup.size
+
+  return nm
+}
+
+/**
+ * Object that maps a Node to a location
+ */
+const NodeSet = () => {
   const ns = {}
   ns.lookup = new Map()
 
@@ -42,14 +60,18 @@ const NodeMap = () => {
 
   ns.delete = (x, y) => ns.lookup.delete(ns.encXY(x,y))
 
+  ns.deleteNode = node => ns.lookup.delete(ns.encXY(node.x,node.y))
+
   ns.has = (x, y) => ns.lookup.has(ns.encXY(x,y))
+
+  ns.hasNode = node => ns.lookup.has(ns.encXY(node.x,node.y))
 
   ns.get = (x, y) => ns.lookup.get(ns.encXY(x,y))
 
   ns.size = () => ns.lookup.size
 
   ns.copy = () => {
-    const nsCopy = NodeMap()
+    const nsCopy = NodeSet()
     nsCopy.lookup = new Map(ns.lookup)
     return nsCopy
   }
@@ -74,7 +96,8 @@ const game = {
    */
   next: (nx, ny, walls) => (state=null, update=null) => {
     if (state==null) {
-      const snake = [Node(1,0), Node(0,0)]
+      const yStart = Math.floor(ny/2)
+      const snake = [Node(1,yStart), Node(0,yStart)]
       return {
         isAlive: true,
         justEaten: true,
@@ -148,3 +171,15 @@ const game = {
 }
 
 game.DIRECTIONS = [game.NORTH, game.SOUTH, game.EAST, game.WEST]
+
+game.DIR_SYMBOLS = NodeMap()
+game.DIR_SYMBOLS.set(game.NORTH, "^")
+game.DIR_SYMBOLS.set(game.SOUTH, "v")
+game.DIR_SYMBOLS.set(game.EAST, ">")
+game.DIR_SYMBOLS.set(game.WEST, "<")
+
+game.DIR_OPPOSITES = NodeMap()
+game.DIR_OPPOSITES.set(game.NORTH, game.SOUTH)
+game.DIR_OPPOSITES.set(game.SOUTH, game.NORTH)
+game.DIR_OPPOSITES.set(game.EAST, game.WEST)
+game.DIR_OPPOSITES.set(game.WEST, game.EAST)

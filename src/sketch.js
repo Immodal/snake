@@ -1,6 +1,16 @@
-let qq = null
+
 
 const sketch = ( p ) => {
+  FRAMERATE_MAX = 60
+  FRAMERATE_MIN = 1
+  FRAMERATE_STEP = 1
+  FRAMERATE_INITIAL = FRAMERATE_MAX
+
+  SIZE_MAX = 6
+  SIZE_MIN = 2
+  SIZE_STEP = 1
+  SIZE_INITIAL = 4
+
   // Pre-allocate DOM component vars, cant be inited until setup() is called
   let canvas = null
   const initCanvas = () => {
@@ -14,7 +24,7 @@ const sketch = ( p ) => {
   let score = 0
   let scoreCounter = null
   const initScoreCounter = () => {
-    scoreCounter = p.createSpan("0")
+    scoreCounter = p.createSpan(`${score}`)
     scoreCounter.parent("#scoreCount")
   }
   const calcScore = state => state.snake.length-2
@@ -59,6 +69,7 @@ const sketch = ( p ) => {
   const HUMAN = 0
   const QLEARN = 1
   const SP = 2
+  const HMC = 3
   let playerSelect = null
   const initPlayerSelect = () => {
     playerSelect = p.createSelect()
@@ -67,6 +78,7 @@ const sketch = ( p ) => {
     playerSelect.option("Human", HUMAN)
     playerSelect.option("Q-Learning", QLEARN)
     playerSelect.option("Shortest Path", SP)
+    playerSelect.option("Hamiltonian Cycle", HMC)
     playerSelect.value(QLEARN)
     playerSelect.changed(resetGame)
   }
@@ -77,49 +89,55 @@ const sketch = ( p ) => {
   let gameSizeLabel = null
   let gameSizeSlider = null
   const initGameSizeSlider = () => {
-    gameSizeLabel = p.createSpan("15")
+    gameSizeSlider = p.createSlider(SIZE_MIN, SIZE_MAX, SIZE_INITIAL, SIZE_STEP)
+    gameSizeLabel = p.createSpan(`${gameSizeSlider.value()}`)
     gameSizeLabel.parent("#gameSizeLbl")
-    gameSizeSlider = p.createSlider(2, 25, 15, 1)
     gameSizeSlider.parent('#gameSize')
     gameSizeSlider.changed(() => {
-      scale = gameSizeSlider.value()
       gameSizeLabel.html(gameSizeSlider.value())
       resetGame()
     })
   }
 
+  let drawWallsCb = null
   let gameSpeedLabel = null
   let gameSpeedSlider = null
   const initGameSpeedSlider = () => {
-    gameSpeedLabel = p.createSpan("60")
+    gameSpeedSlider = p.createSlider(FRAMERATE_MIN, FRAMERATE_MAX, FRAMERATE_INITIAL, FRAMERATE_STEP)
+    gameSpeedLabel = p.createSpan(`${gameSpeedSlider.value()}`)
     gameSpeedLabel.parent("#gameSpeedLbl")
-    gameSpeedSlider = p.createSlider(1, 60, 60, 1)
     gameSpeedSlider.parent('#gameSpeed')
     gameSpeedSlider.changed(() => {
-      p.frameRate(gameSpeedSlider.value())
+      if(!drawWallsCb.checked()) p.frameRate(gameSpeedSlider.value())
       gameSpeedLabel.html(gameSpeedSlider.value())
     })
   }
 
-  let drawWallsCb = null
   let clearWallsBtn = null
   let makeWalls = false
-  let wallsSave = NodeMap()
+  let wallsSave = NodeSet()
   const initWallsBtns = () => {
     drawWallsCb = p.createCheckbox('Draw Walls (pauses game)', false);
     drawWallsCb.parent("#drawWalls")
+    drawWallsCb.changed(() => {
+      if(drawWallsCb.checked()) p.frameRate(FRAMERATE_MAX)
+      if(!drawWallsCb.checked() && playerSelect.value()==HMC) {
+        p.frameRate(gameSpeedSlider.value())
+        resetGame()
+      }
+    })
     clearWallsBtn = p.createButton("Clear Walls")
     clearWallsBtn.parent("#drawWalls")
     clearWallsBtn.mousePressed(clearWalls)
   }
   const clearWalls = () => {
-    wallsSave = NodeMap()
+    wallsSave = NodeSet()
     state.walls = wallsSave
+    if(playerSelect.value()==HMC) resetGame()
   }
   
-  let scale = 15
-  const nX = () => 2 * scale
-  const nY = () => 2 * scale
+  const nX = () => 2 * gameSizeSlider.value()
+  const nY = () => 2 * gameSizeSlider.value()
   const toX = i => Math.floor(i * p.width / nX())
   const toY = i => Math.floor(i * p.height / nY())
   const fromX = x => Math.floor(x * nX() / p.width)
@@ -132,19 +150,21 @@ const sketch = ( p ) => {
     next = game.next(nX(), nY(), wallsSave)
     state = next()
     update = {direction: game.EAST}
-    qModel.policy = null
+    qModel.reset()
     spModel = ShortestPath()
   }
   const resetGame = () => {
     scores = []
     updateScore(0)
     updateScoreStats(-1)
+    hmcModel.reset()
     restart()
   }
 
   // Models
   let qModel = QLearn(100, 50, 1, 0.05, 0.01, 0.9, 0.9, 1, -1)
   let spModel = null
+  let hmcModel = Hamiltonian(100, 100, 1000, 10)
 
   /**
    * Setup
@@ -184,6 +204,10 @@ const sketch = ( p ) => {
         spModel.update(state, state.apple)
         update.direction = spModel.getAction(state.snake[0])
         p5ShortestPath.draw(p, toX, toY, spModel)
+      } else if(playerSelect.value()==HMC) {
+        hmcModel.update(state)
+        update.direction = hmcModel.getAction(state.snake[0])
+        p5Hamiltonian.draw(p, toX, toY, hmcModel)
       }
     }
 
@@ -315,6 +339,31 @@ const p5ShortestPath = {
         p5Utils.drawArrow(p, model.getAction(node), toX, toY)
       }
     }))
+  }
+}
+
+/**
+ * 
+ */
+const p5Hamiltonian = {
+  draw: (p, toX, toY, model) => {
+    p.noStroke()
+    p.fill(`rgb(0,191,255)`)
+    if (model.isHamiltonianCycle) {
+      model.policy.map((v, i) => v.map((q, j) => {
+        if (q!=null) {
+          node = Node(i,j)
+          p5Utils.drawArrow(p, model.getAction(node), toX, toY)
+        }
+      }))
+    } else {
+      model.spAgent.policy.map((v, i) => v.map((q, j) => {
+        if (q!=null) {
+          node = Node(i,j)
+          p5Utils.drawArrow(p, model.getAction(node), toX, toY)
+        }
+      }))
+    }
   }
 }
 

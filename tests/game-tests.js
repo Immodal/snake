@@ -28,8 +28,8 @@ const gameTests = {
     eq(false, Node(2, -1).inBounds(5, 5))
   },
 
-  'walls': () => {
-    const walls = NodeMap()
+  'NodeSet': () => {
+    const walls = NodeSet()
     eq(walls.size(), 0)
     eq(walls.has(10, 6), false)
     walls.add(10, 6)
@@ -54,7 +54,7 @@ const gameTests = {
     const heads = [Node(5,8), Node(1,1), Node(1,-1), Node(-1,1)]
     const snake1 = [Node(0,0), Node(0,1)]
     const snake2 = [Node(1,1), Node(0,1)]
-    const wallsEmpty = NodeMap()
+    const wallsEmpty = NodeSet()
     
     eq(false, game.willLive(2, 2, heads[0], snake1, wallsEmpty))
     eq(false, game.willLive(6, 8, heads[0], snake1, wallsEmpty))
@@ -65,7 +65,7 @@ const gameTests = {
     eq(false, game.willLive(10, 10, heads[2], snake1, wallsEmpty))
     eq(false, game.willLive(10, 10, heads[3], snake1, wallsEmpty))
 
-    const walls1 = NodeMap()
+    const walls1 = NodeSet()
     walls1.add(5, 8)
     eq(false, game.willLive(6, 9, heads[0], snake1, walls1))
     eq(true, game.willLive(10, 10, heads[1], snake1, walls1))
@@ -96,7 +96,7 @@ const gameTests = {
 
   'nextApple': () => {
     const snake1 = [Node(0,0), Node(0,1), Node(1,1)]
-    const wall1 = NodeMap()
+    const wall1 = NodeSet()
     wall1.add(2,1)
     wall1.add(2,0)
 
@@ -124,13 +124,13 @@ const gameTests = {
       var bKeys = Object.keys(b).sort();
       return JSON.stringify(aKeys) === JSON.stringify(bKeys);
     }
-    const next = game.next(10, 9, NodeMap())
+    const next = game.next(100, 99, NodeSet())
     const dirs = game.DIRECTIONS
     let state = next()
 
     // Check initial State
-    eq(state.nx, 10)
-    eq(state.ny, 9)
+    eq(state.nx, 100)
+    eq(state.ny, 99)
     eq(state.isAlive, true)
     eq(state.justEaten, true)
     eq(true, state.snake.reduce((isLinked, node, i, arr)=> {
@@ -140,12 +140,12 @@ const gameTests = {
     }))
     eq(true, dirs.some(d => d.eq(state.direction)))
     eq(true, compareKeys(Node(0,0), state.apple))
-    eq(true, compareKeys(NodeMap(), state.walls))
+    eq(true, compareKeys(NodeSet(), state.walls))
 
     // Check initial state advanced by one step
     let state3 = next(state)
-    eq(state3.nx, 10)
-    eq(state3.ny, 9)
+    eq(state3.nx, 100)
+    eq(state3.ny, 99)
     eq(state3.isAlive, true)
     eq(state3.justEaten, false)
     eq(true, state.snake.reduce((isLinked, node, i, arr)=> {
@@ -162,8 +162,8 @@ const gameTests = {
     let state2 = next(state, {direction: game.SOUTH})
     eq(false, state == state2) // state should always be a new state
     eq(false, state.snake == state2.snake) // snake should always be a copy
-    eq(state2.nx, 10)
-    eq(state2.ny, 9)
+    eq(state2.nx, 100)
+    eq(state2.ny, 99)
     eq(state2.isAlive, true)
     eq(state2.justEaten, true)
     eq(true, state2.snake.reduce((isLinked, node, i, arr)=> {
