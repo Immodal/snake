@@ -1,5 +1,5 @@
 
-const Hamiltonian = (nx, ny) => {
+const Hamiltonian = state => {
   const hm = {}
 
   return hm
@@ -7,6 +7,23 @@ const Hamiltonian = (nx, ny) => {
 
 // https://springerplus.springeropen.com/articles/10.1186/s40064-016-2746-8
 fnHamiltonian = {
+  /**
+   * 
+   */
+  mkCycle: (nx, ny, iLimit=100) => {
+    let graph = fnHamiltonian.mkGraph(nx, ny)
+    fnHamiltonian.runDeletion(graph)
+    fnHamiltonian.getDestroyerPaths(graph).forEach(p => fnHamiltonian.invertPath(p))
+    for(let i=0; i<iLimit; i++) {
+      const start = graph[utils.randInt(0, graph.length-1)][utils.randInt(0, graph[0].length-1)]
+      const goals = NodeSet()
+      goals.addNode(start)
+      fnHamiltonian.invertPath(fnHamiltonian.findConnector(graph, start, goals))
+      if(fnHamiltonian.isHamiltonianCycle(graph)) break
+    }
+    return graph
+  },
+
   /**
    * Child class of Node that also includes methods for tracking and modifying its edges
    */
@@ -105,7 +122,7 @@ fnHamiltonian = {
   /**
    * Object used to track the progress of a path, used in findDestroyer()
    */
-  DestroyerNode: (vertex, parent) => {
+  PathNode: (vertex, parent) => {
     const dn = {}
     
     dn.vertex = vertex
@@ -114,8 +131,10 @@ fnHamiltonian = {
     dn.length = parent == null ? 1 : parent.length + 1
     dn.pathVertices = parent == null ? NodeSet() : dn.parent.pathVertices.copy()
     dn.pathVertices.addNode(dn.vertex)
-    // This only works assuming nodes are added to the path correctly
+    // These only works assuming nodes are added to the path correctly
     dn.isDestroyer = dn.length>=4 && dn.length%2==0 && dn.vertex.getEdge(dn.dirToParent)==1 && dn.parent.vertex.getEdge(dn.parent.dirToParent)==0
+    dn.isAltEdge = dn.length<3 ? false : dn.vertex.getEdge(dn.dirToParent)!=dn.parent.vertex.getEdge(dn.parent.dirToParent)
+    dn.isEvenAltEdge = dn.isAltEdge && dn.length%2==1
 
     dn.toPath = () => {
       const path = []
@@ -129,33 +148,20 @@ fnHamiltonian = {
   },
 
   /**
-   * Returns the shortest Destroyer path found between start and any one of the goals
-   * This mutates the goals object by deleting the vertices that are part of the path
+   * Breadth first search, can produce cycle unless prohibited in pathCriteria
    */
-  findDestroyer: (graph, start, goals) => {
-    // Decide whether the path still or can still meet requirements for being a Destroyer
+  _find: (graph, start, goals, pathCriteria=()=>true, goalCriteria=()=>true) => {
     const continuePath = (current, dir) => {
       const neighbor = current.vertex.getNeighbor(dir)
-      // If the next vertex is not already part of the path, and
-      return neighbor!=null && !current.pathVertices.hasNode(neighbor) && (
-        // If below minimum length, check if it is alternating in the right way
-        (current.length==1 && current.vertex.getEdge(dir)==1) ||  
-        (current.length==2 && current.vertex.getEdge(current.dirToParent)==1 && current.vertex.getEdge(dir)==0) ||
-        (current.length==3 && current.vertex.getEdge(current.dirToParent)==0 && current.vertex.getEdge(dir)==1) ||
-        // If isDestroyer and the next edge has been deleted
-        (current.length>=4 && current.isDestroyer && current.vertex.getEdge(dir)==0) ||
-        // If not destroyer, parent isDestroyer and the next edge exists
-        (current.length>=4 && !current.isDestroyer && current.parent.isDestroyer && current.vertex.getEdge(dir)==1)
-      )
+      // If the next vertex is not already part of the path (unless it is the start node), and meets path criteria
+      return neighbor!=null && (neighbor==start || !current.pathVertices.hasNode(neighbor)) && pathCriteria(current, dir)
     }
-
     // Start BFS
-    const open = [fnHamiltonian.DestroyerNode(start, null)]
-    goals.deleteNode(start)
+    const open = [fnHamiltonian.PathNode(start, null)]
     let current = null
     while (open.length>0 && goals.size()>0) {
       current = open.shift()
-      if (goals.hasNode(current.vertex)) {
+      if (goals.hasNode(current.vertex) && goalCriteria(current)) {
         goals.deleteNode(current.vertex)
         return current.toPath()
       }
@@ -165,13 +171,45 @@ fnHamiltonian = {
         if(current.parent==null || !dir.eq(current.dirToParent)) {
           if(continuePath(current, dir)) {
             const node = current.vertex.sum(dir)
-            open.push(fnHamiltonian.DestroyerNode(graph[node.x][node.y], current))
+            open.push(fnHamiltonian.PathNode(graph[node.x][node.y], current))
           }
         }
       })
     }
 
     return [start]
+  },
+
+  /**
+   * 
+   */
+  findConnector: (graph, start, goals) => {
+    //
+    const pathCriteria = (current, dir) => {
+      return current.length<3 || 
+        (current.isAltEdge && current.vertex.getEdge(current.dirToParent)!=current.vertex.getEdge(dir))
+    }
+    const goalCriteria = current => current.isEvenAltEdge
+    return fnHamiltonian._find(graph, start, goals, pathCriteria, goalCriteria)
+  },
+
+  /**
+   * Returns the shortest Destroyer path found between start and any one of the goals
+   * This mutates the goals object by deleting the vertices that are part of the path
+   */
+  findDestroyer: (graph, start, goals) => {
+    const pathCriteria = (current, dir) => {
+      // If below minimum length, check if it is alternating in the right way
+      return (current.length==1 && current.vertex.getEdge(dir)==1) ||  
+      (current.length==2 && current.vertex.getEdge(current.dirToParent)==1 && current.vertex.getEdge(dir)==0) ||
+      (current.length==3 && current.vertex.getEdge(current.dirToParent)==0 && current.vertex.getEdge(dir)==1) ||
+      // If isDestroyer and the next edge has been deleted
+      (current.length>=4 && current.isDestroyer && current.vertex.getEdge(dir)==0) ||
+      // If not destroyer, parent isDestroyer and the next edge exists
+      (current.length>=4 && !current.isDestroyer && current.parent.isDestroyer && current.vertex.getEdge(dir)==1)
+    }
+    goals.deleteNode(start)
+    return fnHamiltonian._find(graph, start, goals, pathCriteria)
   },
 
   /**
@@ -194,7 +232,7 @@ fnHamiltonian = {
    * It will reduce them both down to 2 edges while maintaining the same number of edges for
    * all other vertices in the path.
    */
-  destroyPath: path => {
+  invertPath: path => {
     path.forEach((vx, i) => {
       if (i<path.length-1) {
         const dir = path[i+1].sub(vx)
