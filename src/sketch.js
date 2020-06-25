@@ -59,6 +59,7 @@ const sketch = ( p ) => {
   const HUMAN = 0
   const QLEARN = 1
   const SP = 2
+  const HMC = 3
   let playerSelect = null
   const initPlayerSelect = () => {
     playerSelect = p.createSelect()
@@ -67,7 +68,8 @@ const sketch = ( p ) => {
     playerSelect.option("Human", HUMAN)
     playerSelect.option("Q-Learning", QLEARN)
     playerSelect.option("Shortest Path", SP)
-    playerSelect.value(QLEARN)
+    playerSelect.option("Hamiltonian Cycle", HMC)
+    playerSelect.value(HMC)
     playerSelect.changed(resetGame)
   }
 
@@ -77,12 +79,11 @@ const sketch = ( p ) => {
   let gameSizeLabel = null
   let gameSizeSlider = null
   const initGameSizeSlider = () => {
-    gameSizeLabel = p.createSpan("15")
+    gameSizeLabel = p.createSpan("2")
     gameSizeLabel.parent("#gameSizeLbl")
-    gameSizeSlider = p.createSlider(2, 25, 15, 1)
+    gameSizeSlider = p.createSlider(2, 25, 2, 1)
     gameSizeSlider.parent('#gameSize')
     gameSizeSlider.changed(() => {
-      scale = gameSizeSlider.value()
       gameSizeLabel.html(gameSizeSlider.value())
       resetGame()
     })
@@ -93,7 +94,7 @@ const sketch = ( p ) => {
   const initGameSpeedSlider = () => {
     gameSpeedLabel = p.createSpan("60")
     gameSpeedLabel.parent("#gameSpeedLbl")
-    gameSpeedSlider = p.createSlider(1, 60, 60, 1)
+    gameSpeedSlider = p.createSlider(1, 60, 1, 1)
     gameSpeedSlider.parent('#gameSpeed')
     gameSpeedSlider.changed(() => {
       p.frameRate(gameSpeedSlider.value())
@@ -117,9 +118,8 @@ const sketch = ( p ) => {
     state.walls = wallsSave
   }
   
-  let scale = 15
-  const nX = () => 2 * scale
-  const nY = () => 2 * scale
+  const nX = () => 2 * gameSizeSlider.value()
+  const nY = () => 2 * gameSizeSlider.value()
   const toX = i => Math.floor(i * p.width / nX())
   const toY = i => Math.floor(i * p.height / nY())
   const fromX = x => Math.floor(x * nX() / p.width)
@@ -134,6 +134,7 @@ const sketch = ( p ) => {
     update = {direction: game.EAST}
     qModel.policy = null
     spModel = ShortestPath()
+    hmcModel = Hamiltonian()
   }
   const resetGame = () => {
     scores = []
@@ -145,6 +146,7 @@ const sketch = ( p ) => {
   // Models
   let qModel = QLearn(100, 50, 1, 0.05, 0.01, 0.9, 0.9, 1, -1)
   let spModel = null
+  let hmcModel = null
 
   /**
    * Setup
@@ -184,6 +186,10 @@ const sketch = ( p ) => {
         spModel.update(state, state.apple)
         update.direction = spModel.getAction(state.snake[0])
         p5ShortestPath.draw(p, toX, toY, spModel)
+      } else if(playerSelect.value()==HMC) {
+        hmcModel.update(state)
+        update.direction = hmcModel.getAction(state.snake[0])
+        p5ShortestPath.draw(p, toX, toY, hmcModel)
       }
     }
 

@@ -1,6 +1,31 @@
 
-const Hamiltonian = state => {
+const Hamiltonian = () => {
   const hm = {}
+
+  hm.graph = null
+  hm.isHamiltonianCycle = false
+  hm.path = null
+  hm.policy = null
+
+  hm.getAction = node => hm.policy[node.x][node.y]
+
+  hm.update = state => {
+    let updated = false
+    if(hm.graph==null) {
+      hm.graph = fnHamiltonian.buildCycle(state.nx, state.ny, 0, 100, 1000)
+      hm.isHamiltonianCycle = fnHamiltonian.isHamiltonianCycle(hm.graph)
+      updated = true
+    } else if (!hm.isHamiltonianCycle) {
+      fnHamiltonian.invertConnectorPaths(hm.graph, 100, 1000)
+      hm.isHamiltonianCycle = fnHamiltonian.isHamiltonianCycle(hm.graph)
+      updated = true
+    }
+
+    if (updated) {
+      hm.path = fnHamiltonian.buildPath(hm.graph)
+      hm.policy = fnHamiltonian.buildPolicy(hm.path, hm.graph.length, hm.graph[0].length)
+    }
+  }
 
   return hm
 }
@@ -10,18 +35,65 @@ fnHamiltonian = {
   /**
    * 
    */
-  mkCycle: (nx, ny, iLimit=100) => {
+  buildCycle: (nx, ny, findDestroyerStepLimit=0, findConnectorStepLimit=100, findConnectorIterationLimit=100) => {
     let graph = fnHamiltonian.mkGraph(nx, ny)
     fnHamiltonian.runDeletion(graph)
-    fnHamiltonian.getDestroyerPaths(graph).forEach(p => fnHamiltonian.invertPath(p))
-    for(let i=0; i<iLimit; i++) {
-      const start = graph[utils.randInt(0, graph.length-1)][utils.randInt(0, graph[0].length-1)]
-      const goals = NodeSet()
-      goals.addNode(start)
-      fnHamiltonian.invertPath(fnHamiltonian.findConnector(graph, start, goals))
-      if(fnHamiltonian.isHamiltonianCycle(graph)) break
-    }
+    fnHamiltonian.getDestroyerPaths(graph, findDestroyerStepLimit).forEach(p => fnHamiltonian.invertPath(p))
+    fnHamiltonian.invertConnectorPaths(graph, findConnectorStepLimit, findConnectorIterationLimit)
     return graph
+  },
+
+    /**
+   * Returns true if the graph contains a Hamiltonian cycle
+   */
+  buildPath: graph => {
+    // Get a direction to move in from the vertex
+    const getMove = (vx, exDir=null) => {
+      for (let i=0; i<game.DIRECTIONS.length; i++) {
+        if (vx.getEdge(game.DIRECTIONS[i])>0 && (exDir==null ? true : !game.DIRECTIONS[i].eq(exDir))) {
+          return game.DIRECTIONS[i]
+        }
+      }
+      return null
+    }
+
+    let start = null
+    // Check that all vertices are valid
+    for (let i=0; i<graph.length; i++) {
+      for (let j=0; j<graph[i].length; j++) {
+        if (start==null && graph[i][j].nEdges!=0) {
+          start = graph[i][j]
+          break
+        }
+      }
+    }
+
+    // Build Path
+    let path = [start]
+    let prevDir = getMove(start)
+    let current = start.getNeighbor(prevDir)
+    while (current!=start && current!=null && path.length<graph.length*graph[0].length) {
+      path.push(current)
+      prevDir = getMove(current, game.DIR_OPPOSITES.get(prevDir))
+      current = current.getNeighbor(prevDir)
+    }
+
+    if (current==start) path.push(current)
+
+    return path
+  },
+
+  /**
+   * 
+   */
+  buildPolicy: (cycle, nx, ny) => {
+    let policy = Array.from(Array(nx), _ => Array.from(Array(ny), _ => null))
+    for (let i=0; i<cycle.length-1; i++) {
+      const srcVx = cycle[i]
+      const nextVx = cycle[i+1]
+      policy[srcVx.x][srcVx.y] = nextVx.sub(srcVx)
+    }
+    return policy
   },
 
   /**
@@ -150,7 +222,7 @@ fnHamiltonian = {
   /**
    * Breadth first search, can produce cycle unless prohibited in pathCriteria
    */
-  _find: (graph, start, goals, pathCriteria=()=>true, goalCriteria=()=>true) => {
+  _find: (graph, start, goals, stepLimit=0, pathCriteria=()=>true, goalCriteria=()=>true) => {
     const continuePath = (current, dir) => {
       const neighbor = current.vertex.getNeighbor(dir)
       // If the next vertex is not already part of the path (unless it is the start node), and meets path criteria
@@ -158,8 +230,9 @@ fnHamiltonian = {
     }
     // Start BFS
     const open = [fnHamiltonian.PathNode(start, null)]
+    let steps = 0
     let current = null
-    while (open.length>0 && goals.size()>0) {
+    while ((stepLimit<=0 || steps<stepLimit) && open.length>0 && goals.size()>0) {
       current = open.shift()
       if (goals.hasNode(current.vertex) && goalCriteria(current)) {
         goals.deleteNode(current.vertex)
@@ -175,6 +248,7 @@ fnHamiltonian = {
           }
         }
       })
+      steps++
     }
 
     return [start]
@@ -183,21 +257,34 @@ fnHamiltonian = {
   /**
    * 
    */
-  findConnector: (graph, start, goals) => {
+  findConnector: (graph, start, goals, stepLimit=100) => {
     //
     const pathCriteria = (current, dir) => {
       return current.length<3 || 
         (current.isAltEdge && current.vertex.getEdge(current.dirToParent)!=current.vertex.getEdge(dir))
     }
     const goalCriteria = current => current.isEvenAltEdge
-    return fnHamiltonian._find(graph, start, goals, pathCriteria, goalCriteria)
+    return fnHamiltonian._find(graph, start, goals, stepLimit, pathCriteria, goalCriteria)
+  },
+
+  /**
+   * 
+   */
+  invertConnectorPaths: (graph, stepLimit=0, iterationLimit=100) => {
+    for(let i=0; i<iterationLimit; i++) {
+      const start = graph[utils.randInt(0, graph.length-1)][utils.randInt(0, graph[0].length-1)]
+      const goals = NodeSet()
+      goals.addNode(start)
+      fnHamiltonian.invertPath(fnHamiltonian.findConnector(graph, start, goals, stepLimit))
+      if(fnHamiltonian.isHamiltonianCycle(graph)) break
+    }
   },
 
   /**
    * Returns the shortest Destroyer path found between start and any one of the goals
    * This mutates the goals object by deleting the vertices that are part of the path
    */
-  findDestroyer: (graph, start, goals) => {
+  findDestroyer: (graph, start, goals, stepLimit=0) => {
     const pathCriteria = (current, dir) => {
       // If below minimum length, check if it is alternating in the right way
       return (current.length==1 && current.vertex.getEdge(dir)==1) ||  
@@ -209,19 +296,19 @@ fnHamiltonian = {
       (current.length>=4 && !current.isDestroyer && current.parent.isDestroyer && current.vertex.getEdge(dir)==1)
     }
     goals.deleteNode(start)
-    return fnHamiltonian._find(graph, start, goals, pathCriteria)
+    return fnHamiltonian._find(graph, start, goals, stepLimit, pathCriteria)
   },
 
   /**
    * Returns an array of destroyer paths in a given graph
    * These paths start and end at remainder nodes (more than 2 edges)
    */
-  getDestroyerPaths: graph => {
+  getDestroyerPaths: (graph, stepLimit=0) => {
     const remainders = fnHamiltonian.getRemainders(graph)
     const remCopy = remainders.copy()
     const paths = []
     remainders.lookup.forEach(vx => {
-      if (remCopy.hasNode(vx)) paths.push(fnHamiltonian.findDestroyer(graph, vx, remCopy))
+      if (remCopy.hasNode(vx)) paths.push(fnHamiltonian.findDestroyer(graph, vx, remCopy, stepLimit))
     })
     return paths
   },

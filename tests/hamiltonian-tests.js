@@ -306,8 +306,17 @@ const HamiltonianTests = {
     eq(fnHamiltonian.isHamiltonianCycle(graph), false)
   },
 
-  'make hamiltonian cycle': () => {
-    let graph = fnHamiltonian.mkCycle(4,4)
+  'build hamiltonian cycle': () => {
+    let graph = fnHamiltonian.buildCycle(4,4)
+    console.log(fnHamiltonian.toString(graph))
+    eq(fnHamiltonian.isHamiltonianCycle(graph), true)
+
+    graph = fnHamiltonian.buildCycle(6,6)
+    console.log(fnHamiltonian.toString(graph))
+    eq(fnHamiltonian.isHamiltonianCycle(graph), true)
+
+    graph = fnHamiltonian.buildCycle(8,8)
+    console.log(fnHamiltonian.toString(graph))
     eq(fnHamiltonian.isHamiltonianCycle(graph), true)
   },
 
