@@ -136,6 +136,9 @@ const sketch = ( p ) => {
     if(playerSelect.value()==HMC) resetGame()
   }
   
+  /**
+   * Game State 
+   */
   const nX = () => 2 * gameSizeSlider.value()
   const nY = () => 2 * gameSizeSlider.value()
   const toX = i => Math.floor(i * p.width / nX())
@@ -190,21 +193,27 @@ const sketch = ( p ) => {
     p.background(240)
 
     if (!drawWallsCb.checked()) {
+      // Update Game State
       state = next(state, update)
       if (state.justEaten) updateScore(calcScore(state))
       if (!state.isAlive || state.apple==null) {
         updateScoreStats(calcScore(state))
         restart()
       }
+
+      // Update Models
       if(playerSelect.value()==QLEARN) {
+        // Update Q Learning
         qModel.update(next, state, state.justEaten)
         update.direction = qModel.getAction(state.snake[0])
         p5QLearn.draw(p, toX, toY, qModel)
       } else if(playerSelect.value()==SP) {
+        // Update Shortest Path
         spModel.update(state, state.apple)
         update.direction = spModel.getAction(state.snake[0])
         p5ShortestPath.draw(p, toX, toY, spModel)
       } else if(playerSelect.value()==HMC) {
+        // Update Hamiltonian Cycle
         hmcModel.update(state)
         update.direction = hmcModel.getAction(state.snake[0])
         p5Hamiltonian.draw(p, toX, toY, hmcModel)
@@ -305,7 +314,7 @@ const p5Game = {
 }
 
 /**
- * 
+ * Draw Functions that can be shared between modules
  */
 const p5Utils = {
   drawArrow: (p, direction, toX, toY) => {
@@ -327,7 +336,7 @@ const p5Utils = {
 }
 
 /**
- * 
+ * Draw and Misc UI related functions for Shortest Path
  */
 const p5ShortestPath = {
   draw: (p, toX, toY, model) => {
@@ -343,7 +352,7 @@ const p5ShortestPath = {
 }
 
 /**
- * 
+ * Draw and Misc UI related functions for Hamiltonian Cycle
  */
 const p5Hamiltonian = {
   draw: (p, toX, toY, model) => {

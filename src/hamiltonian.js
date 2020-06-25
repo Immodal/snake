@@ -2,15 +2,21 @@
 const Hamiltonian = (findDestroyerStepLimit=100, findConnectorStepLimit=100, findConnectorIterLimit=1000, updateLimit=10) => {
   const hm = {}
 
-  hm.getAction = node => hm.isHamiltonianCycle ? hm.policy[node.x][node.y] : hm.spAgent.getAction(node)
+  hm.getAction = node => {
+    if (hm.isHamiltonianCycle) {
+      return hm.policy[node.x][node.y] 
+    } else return hm.spAgent.getAction(node)
+  }
 
   hm.update = state => {
     let updated = false
     if(hm.graph==null) {
+      // Init Graph
       hm.graph = fnHamiltonian.buildCycle(state.nx, state.ny, state.walls, hm.findDestroyerStepLimit, hm.findConnectorStepLimit, hm.findConnectorIterLimit)
       hm.isHamiltonianCycle = fnHamiltonian.isHamiltonianCycle(hm.graph)
       updated = true
     } else if (!hm.isHamiltonianCycle) {
+      // Continue to search for a Hamiltonian Cycle
       // TODO: Improve iteration efficiency
       // Possibly get Sets of separate cycles in the graph, and only iterate on the edges of cycles that neighbor other edges,
       // from smallest cycles
@@ -20,10 +26,16 @@ const Hamiltonian = (findDestroyerStepLimit=100, findConnectorStepLimit=100, fin
     }
 
     if (updated) {
-      hm.path = fnHamiltonian.buildPath(hm.graph)
-      hm.policy = fnHamiltonian.buildPolicy(hm.path, hm.graph.length, hm.graph[0].length)
-      if (!hm.isHamiltonianCycle) {
+      if (hm.isHamiltonianCycle) {
+        hm.path = fnHamiltonian.buildPath(hm.graph)
+        hm.pathNodeIndex = NodeMap()
+        hm.path.forEach((vx, i) => hm.pathNodeIndex.set(vx, i))
+        hm.policy = fnHamiltonian.buildPolicy(hm.path, hm.graph.length, hm.graph[0].length)
+      } else {
+        // If not Cycle, then use Shortest Path agent
         hm.spAgent.update(state, state.apple)
+        // Attempt to find a path in the given graph up to updateLimit times,
+        // beyond that, just re-init and try with a different graph
         hm.updateCount++
         if(hm.updateCount>=hm.updateLimit) {
           hm.reset()
@@ -38,6 +50,7 @@ const Hamiltonian = (findDestroyerStepLimit=100, findConnectorStepLimit=100, fin
     hm.graph = null
     hm.isHamiltonianCycle = false
     hm.path = null
+    hm.pathNodeIndex = null
     hm.policy = null
     hm.updateCount = 0
   }
@@ -54,7 +67,8 @@ const Hamiltonian = (findDestroyerStepLimit=100, findConnectorStepLimit=100, fin
 // https://springerplus.springeropen.com/articles/10.1186/s40064-016-2746-8
 fnHamiltonian = {
   /**
-   * 
+   * Returns a graph initialized to the given dimensions.
+   * Will attempt to find a hamiltonian cycle while adhering to the given limits.
    */
   buildCycle: (nx, ny, exclusions=NodeSet(), findDestroyerStepLimit=0, findConnectorStepLimit=100, findConnectorIterLimit=100) => {
     let graph = fnHamiltonian.mkGraph(nx, ny)
@@ -65,6 +79,9 @@ fnHamiltonian = {
     return graph
   },
 
+  /**
+   * Deletes all edges for the vertices given in the exclusions Set
+   */
   processExclusions: (graph, exclusions) => {
     exclusions.lookup.forEach(node => {
       game.DIRECTIONS.forEach(d => graph[node.x][node.y].deleteEdge(d))
@@ -72,7 +89,7 @@ fnHamiltonian = {
   },
 
   /**
-   * Returns true if the graph contains a Hamiltonian cycle
+   * Returns an array containing the vertex progression for the hamiltonian cycle
    */
   buildPath: graph => {
     // Get a direction to move in from the vertex
@@ -113,13 +130,13 @@ fnHamiltonian = {
   },
 
   /**
-   * 
+   * Returns a 2D matrix with directions to follow on each node based on the given path
    */
-  buildPolicy: (cycle, nx, ny) => {
+  buildPolicy: (path, nx, ny) => {
     let policy = Array.from(Array(nx), _ => Array.from(Array(ny), _ => null))
-    for (let i=0; i<cycle.length-1; i++) {
-      const srcVx = cycle[i]
-      const nextVx = cycle[i+1]
+    for (let i=0; i<path.length-1; i++) {
+      const srcVx = path[i]
+      const nextVx = path[i+1]
       policy[srcVx.x][srcVx.y] = nextVx.sub(srcVx)
     }
     return policy
@@ -293,7 +310,8 @@ fnHamiltonian = {
   },
 
   /**
-   * 
+   * Returns the shortest Connector cycle for a given starting node.
+   * This mutates the goals object by deleting the vertices that are part of the path.
    */
   findConnector: (graph, start, goals, stepLimit=100) => {
     //
@@ -306,7 +324,8 @@ fnHamiltonian = {
   },
 
   /**
-   * 
+   * Randomly selects a vertex to search for a connector cycle, if one is found, it will invert it.
+   * This is done until the iteration limit is hit or a hamiltonian cycle is found.
    */
   invertConnectorPaths: (graph, stepLimit=0, iterationLimit=100) => {
     for(let i=0; i<iterationLimit; i++) {
@@ -319,8 +338,8 @@ fnHamiltonian = {
   },
 
   /**
-   * Returns the shortest Destroyer path found between start and any one of the goals
-   * This mutates the goals object by deleting the vertices that are part of the path
+   * Returns the shortest Destroyer path found between start and any one of the goals.
+   * This mutates the goals object by deleting the vertices that are part of the path.
    */
   findDestroyer: (graph, start, goals, stepLimit=0) => {
     const pathCriteria = (current, dir) => {
@@ -338,8 +357,8 @@ fnHamiltonian = {
   },
 
   /**
-   * Returns an array of destroyer paths in a given graph
-   * These paths start and end at remainder nodes (more than 2 edges)
+   * Returns an array of destroyer paths in a given graph.
+   * These paths start and end at remainder nodes (more than 2 edges).
    */
   getDestroyerPaths: (graph, stepLimit=0) => {
     const remainders = fnHamiltonian.getRemainders(graph)
