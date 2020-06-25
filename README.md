@@ -1,6 +1,6 @@
 # Snake
  
-This is the repo for my P5JS app that uses different techniques to create agents that play the game. Check it out in the link at the top of the page!
+This is the repo for my P5JS app that uses different techniques to create agents that play the game. Check it out by following the link in the About section!
 
 # Blog
 
