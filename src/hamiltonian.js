@@ -1,21 +1,19 @@
 
-const Hamiltonian = () => {
+const Hamiltonian = (findDestroyerStepLimit=100, findConnectorStepLimit=100, findConnectorIterLimit=1000, updateLimit=10) => {
   const hm = {}
 
-  hm.graph = null
-  hm.isHamiltonianCycle = false
-  hm.path = null
-  hm.policy = null
-
-  hm.getAction = node => hm.policy[node.x][node.y]
+  hm.getAction = node => hm.isHamiltonianCycle ? hm.policy[node.x][node.y] : hm.spAgent.getAction(node)
 
   hm.update = state => {
     let updated = false
     if(hm.graph==null) {
-      hm.graph = fnHamiltonian.buildCycle(state.nx, state.ny, 0, 100, 1000)
+      hm.graph = fnHamiltonian.buildCycle(state.nx, state.ny, state.walls, hm.findDestroyerStepLimit, hm.findConnectorStepLimit, hm.findConnectorIterLimit)
       hm.isHamiltonianCycle = fnHamiltonian.isHamiltonianCycle(hm.graph)
       updated = true
     } else if (!hm.isHamiltonianCycle) {
+      // TODO: Improve iteration efficiency
+      // Possibly get Sets of separate cycles in the graph, and only iterate on the edges of cycles that neighbor other edges,
+      // from smallest cycles
       fnHamiltonian.invertConnectorPaths(hm.graph, 100, 1000)
       hm.isHamiltonianCycle = fnHamiltonian.isHamiltonianCycle(hm.graph)
       updated = true
@@ -24,8 +22,31 @@ const Hamiltonian = () => {
     if (updated) {
       hm.path = fnHamiltonian.buildPath(hm.graph)
       hm.policy = fnHamiltonian.buildPolicy(hm.path, hm.graph.length, hm.graph[0].length)
+      if (!hm.isHamiltonianCycle) {
+        hm.spAgent.update(state, state.apple)
+        hm.updateCount++
+        if(hm.updateCount>=hm.updateLimit) {
+          hm.reset()
+          hm.update(state)
+        }
+      }
     }
   }
+
+  hm.reset = () => {
+    hm.spAgent = ShortestPath()
+    hm.graph = null
+    hm.isHamiltonianCycle = false
+    hm.path = null
+    hm.policy = null
+    hm.updateCount = 0
+  }
+
+  hm.findDestroyerStepLimit = findDestroyerStepLimit
+  hm.findConnectorStepLimit = findConnectorStepLimit
+  hm.findConnectorIterLimit = findConnectorIterLimit
+  hm.updateLimit = updateLimit
+  hm.reset()
 
   return hm
 }
@@ -35,15 +56,22 @@ fnHamiltonian = {
   /**
    * 
    */
-  buildCycle: (nx, ny, findDestroyerStepLimit=0, findConnectorStepLimit=100, findConnectorIterationLimit=100) => {
+  buildCycle: (nx, ny, exclusions=NodeSet(), findDestroyerStepLimit=0, findConnectorStepLimit=100, findConnectorIterLimit=100) => {
     let graph = fnHamiltonian.mkGraph(nx, ny)
+    fnHamiltonian.processExclusions(graph, exclusions)
     fnHamiltonian.runDeletion(graph)
     fnHamiltonian.getDestroyerPaths(graph, findDestroyerStepLimit).forEach(p => fnHamiltonian.invertPath(p))
-    fnHamiltonian.invertConnectorPaths(graph, findConnectorStepLimit, findConnectorIterationLimit)
+    fnHamiltonian.invertConnectorPaths(graph, findConnectorStepLimit, findConnectorIterLimit)
     return graph
   },
 
-    /**
+  processExclusions: (graph, exclusions) => {
+    exclusions.lookup.forEach(node => {
+      game.DIRECTIONS.forEach(d => graph[node.x][node.y].deleteEdge(d))
+    })
+  },
+
+  /**
    * Returns true if the graph contains a Hamiltonian cycle
    */
   buildPath: graph => {
@@ -75,6 +103,7 @@ fnHamiltonian = {
     while (current!=start && current!=null && path.length<graph.length*graph[0].length) {
       path.push(current)
       prevDir = getMove(current, game.DIR_OPPOSITES.get(prevDir))
+      if(prevDir==null) break // A dead end has been hit
       current = current.getNeighbor(prevDir)
     }
 
@@ -125,6 +154,15 @@ fnHamiltonian = {
       }
     }
 
+    // Delete this edge by setting its value to -1 (also affects its neighbor)
+    vx.deleteEdge = dir => { 
+      if (vx.getEdge(dir)>=-1) {
+        vx.setEdge(dir, -1) 
+        const neighbor = vx.getNeighbor(dir)
+        if (neighbor != null) neighbor.setEdge(game.DIR_OPPOSITES.get(dir), vx.getEdge(dir)) 
+      }
+    }
+
     // Returns the neighboring Vertex in a given direction
     vx.getNeighbor = dir => {
       const node = vx.sum(dir)
@@ -145,10 +183,10 @@ fnHamiltonian = {
       for (let j=0; j<graph[i].length; j++) {
         graph[i][j] = fnHamiltonian.Vertex(i, j, graph)
         // No edges at the ends of the graph
-        if (i==0) graph[i][j].setEdge(game.WEST, -1)
-        else if (i==graph.length-1) graph[i][j].setEdge(game.EAST, -1)
-        if (j==0) graph[i][j].setEdge(game.NORTH, -1)
-        else if (j==graph[i].length-1) graph[i][j].setEdge(game.SOUTH, -1)
+        if (i==0) graph[i][j].deleteEdge(game.WEST)
+        else if (i==graph.length-1) graph[i][j].deleteEdge(game.EAST)
+        if (j==0) graph[i][j].deleteEdge(game.NORTH)
+        else if (j==graph[i].length-1) graph[i][j].deleteEdge(game.SOUTH)
       }
     }
     return graph

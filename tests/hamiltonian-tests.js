@@ -307,15 +307,15 @@ const HamiltonianTests = {
   },
 
   'build hamiltonian cycle': () => {
-    let graph = fnHamiltonian.buildCycle(4,4)
+    let graph = fnHamiltonian.buildCycle(4,4, NodeSet(), 0, 200, 1000)
     console.log(fnHamiltonian.toString(graph))
     eq(fnHamiltonian.isHamiltonianCycle(graph), true)
 
-    graph = fnHamiltonian.buildCycle(6,6)
+    graph = fnHamiltonian.buildCycle(6,6, NodeSet(), 0, 200, 1000)
     console.log(fnHamiltonian.toString(graph))
     eq(fnHamiltonian.isHamiltonianCycle(graph), true)
 
-    graph = fnHamiltonian.buildCycle(8,8)
+    graph = fnHamiltonian.buildCycle(8,8, NodeSet(), 0, 200, 1000)
     console.log(fnHamiltonian.toString(graph))
     eq(fnHamiltonian.isHamiltonianCycle(graph), true)
   },

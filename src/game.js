@@ -96,7 +96,8 @@ const game = {
    */
   next: (nx, ny, walls) => (state=null, update=null) => {
     if (state==null) {
-      const snake = [Node(1,0), Node(0,0)]
+      const yStart = Math.floor(ny/2)
+      const snake = [Node(1,yStart), Node(0,yStart)]
       return {
         isAlive: true,
         justEaten: true,
