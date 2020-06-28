@@ -2,7 +2,7 @@
 const Hamiltonian = (findDestroyerStepLimit=100, findConnectorStepLimit=100, findConnectorIterLimit=1000, updateLimit=10) => {
   const hm = {}
 
-  hm.getAction = node => {
+  hm.getAction = (node, state=null) => {
     if (hm.isHamiltonianCycle) {
       return hm.policy[node.x][node.y] 
     } else return hm.spAgent.getAction(node)
@@ -92,16 +92,6 @@ fnHamiltonian = {
    * Returns an array containing the vertex progression for the hamiltonian cycle
    */
   buildPath: graph => {
-    // Get a direction to move in from the vertex
-    const getMove = (vx, exDir=null) => {
-      for (let i=0; i<game.DIRECTIONS.length; i++) {
-        if (vx.getEdge(game.DIRECTIONS[i])>0 && (exDir==null ? true : !game.DIRECTIONS[i].eq(exDir))) {
-          return game.DIRECTIONS[i]
-        }
-      }
-      return null
-    }
-
     let start = null
     // Check that all vertices are valid
     for (let i=0; i<graph.length; i++) {
@@ -115,15 +105,15 @@ fnHamiltonian = {
 
     // Build Path
     let path = [start]
-    let prevDir = getMove(start)
+    let prevDir = start.getMove()
     let current = start.getNeighbor(prevDir)
     while (current!=start && current!=null && path.length<graph.length*graph[0].length) {
       path.push(current)
-      prevDir = getMove(current, game.DIR_OPPOSITES.get(prevDir))
+      prevDir = current.getMove(game.DIR_OPPOSITES.get(prevDir))
       if(prevDir==null) break // A dead end has been hit
       current = current.getNeighbor(prevDir)
     }
-
+    
     if (current==start) path.push(current)
 
     return path
@@ -185,6 +175,16 @@ fnHamiltonian = {
       const node = vx.sum(dir)
       return node.inBounds(vx.graph.length, vx.graph[0].length) ? vx.graph[node.x][node.y] : null
     }
+
+    // Returns the first direction to move in from the vertex
+    vx.getMove = (exDir=null) => {
+      for (let i=0; i<game.DIRECTIONS.length; i++) {
+        if (vx.getEdge(game.DIRECTIONS[i])>0 && (exDir==null ? true : !game.DIRECTIONS[i].eq(exDir))) {
+          return game.DIRECTIONS[i]
+        }
+      }
+      return null
+    }    
 
     return vx
   },
@@ -389,16 +389,6 @@ fnHamiltonian = {
    * Returns true if the graph contains a Hamiltonian cycle
    */
   isHamiltonianCycle: graph => {
-    // Get a direction to move in from the vertex
-    const getMove = (vx, exDir=null) => {
-      for (let i=0; i<game.DIRECTIONS.length; i++) {
-        if (vx.getEdge(game.DIRECTIONS[i])>0 && (exDir==null ? true : !game.DIRECTIONS[i].eq(exDir))) {
-          return game.DIRECTIONS[i]
-        }
-      }
-      return null
-    }
-
     const exclusions = NodeSet()
     const pathVertices = NodeSet()
     let start = null
@@ -415,11 +405,11 @@ fnHamiltonian = {
 
     // Go through the path and check if it is a Hamiltonian Cycle
     pathVertices.addNode(start)
-    let prevDir = getMove(start)
+    let prevDir = start.getMove()
     let current = start.getNeighbor(prevDir)
     while (!pathVertices.hasNode(current) && !exclusions.hasNode(current)) {
       pathVertices.addNode(current)
-      prevDir = getMove(current, game.DIR_OPPOSITES.get(prevDir))
+      prevDir = current.getMove(game.DIR_OPPOSITES.get(prevDir))
       current = current.getNeighbor(prevDir)
       if (current==null) break
     }
