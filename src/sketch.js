@@ -79,7 +79,7 @@ const sketch = ( p ) => {
     playerSelect.option("Q-Learning", QLEARN)
     playerSelect.option("Shortest Path", SP)
     playerSelect.option("Hamiltonian Cycle", HMC)
-    playerSelect.value(QLEARN)
+    playerSelect.value(HMC)
     playerSelect.changed(resetGame)
   }
 
