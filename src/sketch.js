@@ -16,7 +16,7 @@ const sketch = ( p ) => {
   // Pre-allocate DOM component vars, cant be inited until setup() is called
   let canvas = null
   const initCanvas = () => {
-    canvas = p.createCanvas(500, 500)
+    canvas = p.createCanvas(600, 600)
     canvas.parent("#cv")
   }
 
