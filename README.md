@@ -1,11 +1,18 @@
 # Snake
  
-This is the repo for my P5JS app that uses different techniques to create agents that play the game. Check it out by following the link in the About section!
+This project uses Q-Learning, Hamiltonian Cycles (2016, [Alhalabi et al](https://springerplus.springeropen.com/articles/10.1186/s40064-016-2746-8)) and Breadth First Search to play Snake.
 
-# Blog
+<p align="center">
+  <img src="readme/hamiltonian-cycle.gif" alt="hamiltonian cycle"/>
+</p>
+<p align="center">Figure 1: Hamiltonian Cycle</p>
 
-I also write about the algorithms and the development of the app on my blog:
+<p align="center">
+  <img src="readme/qlearning.gif" alt="Q-Learning"/>
+</p>
+<p align="center">Figure 2: Q-Learning</p>
 
-* [Hamiltonian Cycle](https://kychin.netlify.app/snake/hamiltonian-cycle/)
-* [Q-Learning](https://kychin.netlify.app/snake/qlearning/)
-* [Making the Game](https://kychin.netlify.app/snake/making-the-game/)
+<p align="center">
+  <img src="readme/maze.png" alt="maze"/>
+</p>
+<p align="center">Figure 3: Snake navigating custom maze</p>
