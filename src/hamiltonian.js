@@ -1,5 +1,5 @@
 
-const Hamiltonian = (findDestroyerStepLimit=100, findConnectorStepLimit=100, findConnectorIterLimit=1000, updateLimit=10) => {
+const Hamiltonian = (findDestroyerStepLimit=100, findConnectorStepLimit=100, findConnectorIterLimit=1000, updateLimit=30) => {
   const hm = {}
 
   hm.getAction = (node, state=null) => {

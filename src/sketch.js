@@ -6,10 +6,12 @@ const sketch = ( p ) => {
   FRAMERATE_STEP = 1
   FRAMERATE_INITIAL = FRAMERATE_MAX
 
-  SIZE_MAX = 6
+  SIZE_MAX = 25
   SIZE_MIN = 2
   SIZE_STEP = 1
-  SIZE_INITIAL = 4
+  SIZE_INITIAL = 10
+  SIZE_INITIAL_HAMILTONIAN = 4
+  SIZE_MAX_HAMILTONIAN = 6
 
   // Pre-allocate DOM component vars, cant be inited until setup() is called
   let canvas = null
@@ -80,16 +82,23 @@ const sketch = ( p ) => {
     playerSelect.option("Shortest Path", SP)
     playerSelect.option("Hamiltonian Cycle", HMC)
     playerSelect.value(HMC)
-    playerSelect.changed(resetGame)
+    playerSelect.changed(() => {
+      gameSizeSlider.remove()
+      gameSizeLabel.remove()
+      initGameSizeSlider()
+      resetGame()
+    })
   }
 
   /**
    * Game Settings Elements
    */
+  let drawArrowsCb = null
   let gameSizeLabel = null
   let gameSizeSlider = null
   const initGameSizeSlider = () => {
-    gameSizeSlider = p.createSlider(SIZE_MIN, SIZE_MAX, SIZE_INITIAL, SIZE_STEP)
+    if(playerSelect.value()==HMC) gameSizeSlider = p.createSlider(SIZE_MIN, SIZE_MAX_HAMILTONIAN, SIZE_INITIAL_HAMILTONIAN, SIZE_STEP)
+    else gameSizeSlider = p.createSlider(SIZE_MIN, SIZE_MAX, SIZE_INITIAL, SIZE_STEP)
     gameSizeLabel = p.createSpan(`${gameSizeSlider.value()}`)
     gameSizeLabel.parent("#gameSizeLbl")
     gameSizeSlider.parent('#gameSize')
@@ -117,7 +126,7 @@ const sketch = ( p ) => {
   let makeWalls = false
   let wallsSave = NodeSet()
   const initWallsBtns = () => {
-    drawWallsCb = p.createCheckbox('Draw Walls (pauses game)', false);
+    drawWallsCb = p.createCheckbox('Add/Remove Walls (pauses game)', false);
     drawWallsCb.parent("#drawWalls")
     drawWallsCb.changed(() => {
       if(drawWallsCb.checked()) p.frameRate(FRAMERATE_MAX)
@@ -174,7 +183,6 @@ const sketch = ( p ) => {
    */
   p.setup = () => {
     initCanvas()
-    initGameSizeSlider()
     initGameSpeedSlider()
     initWallsBtns()
 
@@ -182,6 +190,11 @@ const sketch = ( p ) => {
     initScoreStats()
     initPlayerSelect()
 
+    // Must be done after player select
+    initGameSizeSlider()
+
+    drawArrowsCb = p.createCheckbox("Draw Path Arrows", true)
+    drawArrowsCb.parent("#arrows")
     p.frameRate(gameSpeedSlider.value())
     resetGame()
   }
@@ -206,21 +219,23 @@ const sketch = ( p ) => {
         // Update Q Learning
         qModel.update(next, state, state.justEaten)
         update.direction = qModel.getAction(state.snake[0])
-        p5QLearn.draw(p, toX, toY, qModel)
+        if(drawArrowsCb.checked()) p5QLearn.draw(p, toX, toY, qModel)
       } else if(playerSelect.value()==SP) {
         // Update Shortest Path
         spModel.update(state, state.apple)
         update.direction = spModel.getAction(state.snake[0])
-        p5ShortestPath.draw(p, toX, toY, spModel)
+        if(drawArrowsCb.checked()) p5ShortestPath.draw(p, toX, toY, spModel)
       } else if(playerSelect.value()==HMC) {
         // Update Hamiltonian Cycle
         hmcModel.update(state)
         update.direction = hmcModel.getAction(state.snake[0])
-        p5Hamiltonian.draw(p, toX, toY, hmcModel)
+        if(drawArrowsCb.checked()) p5Hamiltonian.draw(p, toX, toY, hmcModel)
       }
     }
 
     p5Game.draw(p, toX, toY, state)
+
+    if(playerSelect.value()==HMC && !hmcModel.isHamiltonianCycle) p5Hamiltonian.notice(p, p.width/2, p.height/2)
   }
 
   /**
@@ -279,21 +294,28 @@ const p5Game = {
 
     // Draw snake
     p.stroke(0)
-    p.strokeWeight(2)
+    p.strokeWeight(toX(0.5))
     p.fill(0)
-    snake.forEach(node => {
-      p.rect(toX(node.x), toY(node.y), toX(1), toX(1))
+    snake.forEach((node,i) => {
+      if(i!=snake.length-1) {
+        p.line(toX(node.x+0.5), toY(node.y+0.5), toX(snake[i+1].x+0.5), toY(snake[i+1].y+0.5))
+      }
     })
+    p.fill(255)
+    p.strokeWeight(2)
+    p.ellipse(toX(snake[0].x+0.5), toY(snake[0].y+0.5), toX(0.25), toY(0.25))
+    snake[snake.length-1]
     // Draw Apple
+    p.strokeWeight(2)
     p.fill(255, 0, 0)
-    p.rect(toX(apple.x), toY(apple.y), toX(1), toX(1))
+    p.ellipse(toX(apple.x+0.5), toY(apple.y+0.5), toX(0.75), toY(0.75))
 
     // Draw Walls
     p.strokeWeight(2)
     p.stroke(34,139,34)
     p.fill(34,139,34)
     walls.lookup.forEach(node => {
-      p.rect(toX(node.x), toY(node.y), toX(1), toX(1))
+      p.rect(toX(node.x), toY(node.y), toX(1), toY(1))
     })
 
 
@@ -305,10 +327,10 @@ const p5Game = {
   },
 
   processUserInput: p => {
-    if (p.key == "w") return game.NORTH
-    else if (p.key == "s") return game.SOUTH
-    else if (p.key == "d") return game.EAST
-    else if (p.key == "a") return game.WEST
+    if (p.key == "w" || p.keyIsDown(38)) return game.NORTH
+    else if (p.key == "s" || p.keyIsDown(40)) return game.SOUTH
+    else if (p.key == "d" || p.keyIsDown(39)) return game.EAST
+    else if (p.key == "a" || p.keyIsDown(37)) return game.WEST
     else return null
   },
 }
@@ -373,6 +395,15 @@ const p5Hamiltonian = {
         }
       }))
     }
+  },
+
+  notice: (p, x, y) => {
+    p.textSize(30)
+    p.stroke(255)
+    p.strokeWeight(2)
+    p.fill(0)
+    p.textAlign(p.CENTER)
+    p.text("Searching for Cycle...", x, y)
   }
 }
 
