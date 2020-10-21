@@ -10,7 +10,7 @@ This project uses Q-Learning, Hamiltonian Cycles (2016, [Alhalabi et al](https:/
 <p align="center">
   <img src="readme/qlearning.gif" alt="Q-Learning"/>
 </p>
-<p align="center">Figure 2: Q-Learning</p>
+<p align="center">Figure 2: Q-Learning with policy arrows enabled</p>
 
 <p align="center">
   <img src="readme/maze.png" alt="maze"/>
