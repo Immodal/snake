@@ -1,6 +1,6 @@
 # Snake
  
-This project uses Q-Learning, Hamiltonian Cycles (2016, [Alhalabi et al](https://springerplus.springeropen.com/articles/10.1186/s40064-016-2746-8)) and Breadth First Search to play Snake.
+This project uses Q-Learning, Hamiltonian Cycles (2016, [Alhalabi et al](https://springerplus.springeropen.com/articles/10.1186/s40064-016-2746-8)) and Breadth First Search to play Snake. Mazes can also be drawn for the snake to navigate through.
 
 The app can be found here: https://immodal.github.io/snake/
 
